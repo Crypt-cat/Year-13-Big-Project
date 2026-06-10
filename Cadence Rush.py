@@ -5,7 +5,7 @@ pygame.init()
 
 SCREEN = pygame.display.set_mode((1440, 850))
 
-default_background = pygame.image.load("CadenceRushBackground.png").convert()
+default_background = pygame.image.load("assets/CadenceRushBackground.png").convert()
 
 
 class Button():
