@@ -4,9 +4,23 @@ import sys
 pygame.init()
 
 SCREEN = pygame.display.set_mode((1440, 850))
+clock = pygame.time.Clock()
+
 
 default_background = pygame.image.load("assets/CadenceRushBackground.png").convert()
 
+outline_up  = pygame.transform.scale(pygame.image.load("assets/Arrow_Outline_1.png").convert_alpha(), (80, 80))
+outline_left  = pygame.transform.scale(pygame.image.load("assets/Arrow_Outline_2.png").convert_alpha(), (80, 80))
+outline_down    = pygame.transform.scale(pygame.image.load("assets/Arrow_Outline_3.png").convert_alpha(), (80, 80))
+outline_right = pygame.transform.scale(pygame.image.load("assets/Arrow_Outline_4.png").convert_alpha(), (80, 80))
+
+note_up  = pygame.transform.scale(pygame.image.load("assets/Arrow_Colour_1.png").convert_alpha(), (80, 80))
+note_left  = pygame.transform.scale(pygame.image.load("assets/Arrow_Colour_2.png").convert_alpha(), (80, 80))
+note_down    = pygame.transform.scale(pygame.image.load("assets/Arrow_Colour_3.png").convert_alpha(), (80, 80))
+note_right = pygame.transform.scale(pygame.image.load("assets/Arrow_Colour_4.png").convert_alpha(), (80, 80))
+
+receptor_images = {0: outline_left, 1: outline_down, 2: outline_up, 3: outline_right}
+note_images     = {0: note_left,     1: note_down,     2: note_up,     3: note_right}
 
 class Button():
     """Button class to easily create buttons for my program and automatically """
@@ -70,7 +84,45 @@ def start_game():
                 if back_button.checkForInput(mouse_pos):
                     return 
                     
+                pressed_lane = None
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+                
+            if event.type == pygame.MOUSEBUTTONDOWN and back_button.checkForInput(mouse_pos):
+                return
+
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_a:      pressed_lane = 0
+                elif event.key == pygame.K_s:    pressed_lane = 1
+                elif event.key == pygame.K_k:    pressed_lane = 2
+                elif event.key == pygame.K_l:    pressed_lane = 3
+
+                if pressed_lane is not None:
+                    for note in active_notes:
+                        if note["lane"] == pressed_lane:
+                            diff = abs(note["hit_time"] - current_time)
+
+                            if diff <= 16:
+                                counts["MAX"] += 1
+                            elif diff <= 46:
+                                counts["300"] += 1
+                            elif diff <= 79:
+                                counts["200"] += 1
+                            elif diff <= 109:
+                                counts["100"] += 1
+                            elif diff <= 133:
+                                counts["50"] += 1
+                            else:
+                                continue
+
+                            total_notes_played += 1
+                            active_notes.remove(note)
+                            break
+
         pygame.display.flip()
+        clock.tick(60)
 
 
 def options():
