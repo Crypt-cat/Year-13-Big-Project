@@ -64,27 +64,71 @@ def get_font(size):
     """Returns the custom font along with the size that was inputted."""
     return pygame.font.Font("assets/font.ttf", size)
 
+NIGHT_OF_NIGHTS_CHART = []
+
+start_intro = 0
+for i in range(24):
+    lane = i % 4 if (i // 4) % 2 == 0 else 3 - (i % 4)
+    NIGHT_OF_NIGHTS_CHART.append([start_intro + int(i * 333.33), lane])
+
+start_verse = int(24 * 333.33) + 500 
+for i in range(16):
+    t_base = start_verse + int(i * 666.66)
+    NIGHT_OF_NIGHTS_CHART.append([t_base, 0])
+    NIGHT_OF_NIGHTS_CHART.append([t_base + 166, 1])
+    NIGHT_OF_NIGHTS_CHART.append([t_base + 333, 2])
+
+start_pre = start_verse + int(16 * 666.66)
+for i in range(12):
+    t_base = start_pre + int(i * 333.33)
+    if i % 2 == 0:
+        NIGHT_OF_NIGHTS_CHART.append([t_base, 0])
+        NIGHT_OF_NIGHTS_CHART.append([t_base, 3])
+    else:
+        NIGHT_OF_NIGHTS_CHART.append([t_base, 1])
+        NIGHT_OF_NIGHTS_CHART.append([t_base, 2])
+
+start_drop = start_pre + int(12 * 333.33) 
+stair_pattern = [0, 1, 2, 3, 2, 1, 0, 1, 2, 3, 2, 1, 0, -1, 3, -1]
+for i in range(64):
+    t = start_drop + int(i * 166.66)
+    lane = stair_pattern[i % len(stair_pattern)]
+    if lane != -1:
+        NIGHT_OF_NIGHTS_CHART.append([t, lane])
+
 def start_game():
     pygame.display.set_caption("Cadence Rush")
+
+    lane_x_positions = [520, 620, 720, 820]
+    receptor_y = 700
+    scroll_speed = 0.5 
     
+    counts = {"MAX": 0, "300": 0, "200": 0, "100": 0, "50": 0, "MISS": 0}
+    total_notes_played = 0
+    accuracy = 100.0
+
+    chart_notes = list(NIGHT_OF_NIGHTS_CHART)
+    active_notes = []
+    
+    start_time = pygame.time.get_ticks()
     back_button = Button(image=None, pos=(720, 600), text_input="BACK", font=get_font(40), base_colour="#ffffff", hovering_colour="#00ff00")
 
     while True:
         SCREEN.fill("black")
         mouse_pos = pygame.mouse.get_pos()
         
-        back_button.changeColor(mouse_pos)
-        back_button.update(SCREEN)
+        current_time = pygame.time.get_ticks() - start_time - 3000
+
+        for lane_idx, x_pos in enumerate(lane_x_positions):
+            SCREEN.blit(receptor_images[lane_idx], (x_pos, receptor_y))
         
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.quit()
-                sys.exit()
-            if event.type == pygame.MOUSEBUTTONDOWN:
-                if back_button.checkForInput(mouse_pos):
-                    return 
+        while chart_notes and chart_notes[0][0] <= current_time + 1500:
+            spawned = chart_notes.pop(0)
+            active_notes.append({"hit_time": spawned[0], "lane": spawned[1]})
+
+        
                     
-                pressed_lane = None
+        pressed_lane = None
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
