@@ -6,7 +6,6 @@ pygame.init()
 SCREEN = pygame.display.set_mode((1440, 850))
 clock = pygame.time.Clock()
 
-
 default_background = pygame.image.load("assets/CadenceRushBackground.png").convert()
 
 outline_up  = pygame.transform.scale(pygame.image.load("assets/Arrow_Outline_1.png").convert_alpha(), (80, 80))
@@ -111,7 +110,7 @@ def start_game():
     active_notes = []
     
     start_time = pygame.time.get_ticks()
-    back_button = Button(image=None, pos=(720, 600), text_input="BACK", font=get_font(40), base_colour="#ffffff", hovering_colour="#00ff00")
+    back_button = Button(image=None, pos=(100, 50), text_input="BACK", font=get_font(30), base_colour="#ffffff", hovering_colour="#00ff00")
 
     while True:
         SCREEN.fill("black")
@@ -126,8 +125,37 @@ def start_game():
             spawned = chart_notes.pop(0)
             active_notes.append({"hit_time": spawned[0], "lane": spawned[1]})
 
+        for note in active_notes[:]:
+            time_difference = note["hit_time"] - current_time
+            note_y = receptor_y - (time_difference * scroll_speed)
+
+            if -80 <= note_y <= 850:
+                SCREEN.blit(note_images[note["lane"]], (lane_x_positions[note["lane"]], note_y))
+
+            if time_difference < -133: 
+                counts["MISS"] += 1
+                total_notes_played += 1
+                active_notes.remove(note)
+
+        if total_notes_played > 0:
+            numerator = 300 * (counts["MAX"] + counts["300"]) + 200 * counts["200"] + 100 * counts["100"] + 50 * counts["50"]
+            denominator = 300 * total_notes_played
+            accuracy = (numerator / denominator) * 100
+
+        acc_str = f"ACC: {accuracy:.2f}%"
+        stat_str = f"MAX:{counts['MAX']}  300:{counts['300']}  200:{counts['200']}  100:{counts['100']}  50:{counts['50']}  MISS:{counts['MISS']}"
         
-                    
+        SCREEN.blit(get_font(25).render(acc_str, True, "#ffffff"), (1100, 40))
+        SCREEN.blit(get_font(18).render(stat_str, True, "#aaaaaa"), (250, 40)) 
+
+        if current_time < 0:
+            ready_seconds = abs(current_time) // 1000 + 1
+            ready_text = get_font(60).render(str(ready_seconds), True, "#ff0000")
+            SCREEN.blit(ready_text, (695, 350))
+
+        back_button.changeColor(mouse_pos)
+        back_button.update(SCREEN)
+                   
         pressed_lane = None
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -222,15 +250,16 @@ def main_menu():
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if play_button.checkForInput(menu_mouse_pos):
                     start_game()
+                    pygame.display.set_caption("Menu")
                 if options_button.checkForInput(menu_mouse_pos):
                     options()
+                    pygame.display.set_caption("Menu")
                 if quit_button.checkForInput(menu_mouse_pos):
                     pygame.quit()
                     sys.exit()
             
         pygame.display.flip()
+        clock.tick(60)
 
 main_menu()
 pygame.quit()
-
-
