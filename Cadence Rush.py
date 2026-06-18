@@ -6,17 +6,17 @@ pygame.init()
 SCREEN = pygame.display.set_mode((1440, 850))
 clock = pygame.time.Clock()
 
-default_background = pygame.image.load("assets/CadenceRushBackground.png").convert()
+default_background = pygame.image.load("Year-13-Big-project/assets/CadenceRushBackground.png").convert()
 
-outline_up  = pygame.transform.scale(pygame.image.load("assets/Arrow_Outline_1.png").convert_alpha(), (80, 80))
-outline_left  = pygame.transform.scale(pygame.image.load("assets/Arrow_Outline_2.png").convert_alpha(), (80, 80))
-outline_down    = pygame.transform.scale(pygame.image.load("assets/Arrow_Outline_3.png").convert_alpha(), (80, 80))
-outline_right = pygame.transform.scale(pygame.image.load("assets/Arrow_Outline_4.png").convert_alpha(), (80, 80))
+outline_up  = pygame.transform.scale(pygame.image.load("Year-13-Big-project/assets/Arrow_Outline_1.png").convert_alpha(), (80, 80))
+outline_left  = pygame.transform.scale(pygame.image.load("Year-13-Big-project/assets/Arrow_Outline_2.png").convert_alpha(), (80, 80))
+outline_down    = pygame.transform.scale(pygame.image.load("Year-13-Big-project/assets/Arrow_Outline_3.png").convert_alpha(), (80, 80))
+outline_right = pygame.transform.scale(pygame.image.load("Year-13-Big-project/assets/Arrow_Outline_4.png").convert_alpha(), (80, 80))
 
-note_up  = pygame.transform.scale(pygame.image.load("assets/Arrow_Colour_1.png").convert_alpha(), (80, 80))
-note_left  = pygame.transform.scale(pygame.image.load("assets/Arrow_Colour_2.png").convert_alpha(), (80, 80))
-note_down    = pygame.transform.scale(pygame.image.load("assets/Arrow_Colour_3.png").convert_alpha(), (80, 80))
-note_right = pygame.transform.scale(pygame.image.load("assets/Arrow_Colour_4.png").convert_alpha(), (80, 80))
+note_up  = pygame.transform.scale(pygame.image.load("Year-13-Big-project/assets/Arrow_Colour_1.png").convert_alpha(), (80, 80))
+note_left  = pygame.transform.scale(pygame.image.load("Year-13-Big-project/assets/Arrow_Colour_2.png").convert_alpha(), (80, 80))
+note_down    = pygame.transform.scale(pygame.image.load("Year-13-Big-project/assets/Arrow_Colour_3.png").convert_alpha(), (80, 80))
+note_right = pygame.transform.scale(pygame.image.load("Year-13-Big-project/assets/Arrow_Colour_4.png").convert_alpha(), (80, 80))
 
 receptor_images = {0: outline_left, 1: outline_down, 2: outline_up, 3: outline_right}
 note_images     = {0: note_left,     1: note_down,     2: note_up,     3: note_right}
@@ -61,16 +61,18 @@ class Button():
 
 def get_font(size):
     """Returns the custom font along with the size that was inputted."""
-    return pygame.font.Font("assets/font.ttf", size)
+    return pygame.font.Font("Year-13-Big-project/assets/font.ttf", size)
+
+CHART_OFFSET = 1400
 
 NIGHT_OF_NIGHTS_CHART = []
 
-start_intro = 0
+start_intro = 0 + CHART_OFFSET
 for i in range(24):
     lane = i % 4 if (i // 4) % 2 == 0 else 3 - (i % 4)
     NIGHT_OF_NIGHTS_CHART.append([start_intro + int(i * 333.33), lane])
 
-start_verse = int(24 * 333.33) + 500 
+start_verse = int(24 * 333.33) + 500 + CHART_OFFSET
 for i in range(16):
     t_base = start_verse + int(i * 666.66)
     NIGHT_OF_NIGHTS_CHART.append([t_base, 0])
@@ -87,7 +89,7 @@ for i in range(12):
         NIGHT_OF_NIGHTS_CHART.append([t_base, 1])
         NIGHT_OF_NIGHTS_CHART.append([t_base, 2])
 
-start_drop = start_pre + int(12 * 333.33) 
+start_drop = start_pre + int(12 * 333.33)
 stair_pattern = [0, 1, 2, 3, 2, 1, 0, 1, 2, 3, 2, 1, 0, -1, 3, -1]
 for i in range(64):
     t = start_drop + int(i * 166.66)
@@ -121,9 +123,10 @@ def start_game():
         for lane_idx, x_pos in enumerate(lane_x_positions):
             SCREEN.blit(receptor_images[lane_idx], (x_pos, receptor_y))
         
-        while chart_notes and chart_notes[0][0] <= current_time + 1500:
-            spawned = chart_notes.pop(0)
-            active_notes.append({"hit_time": spawned[0], "lane": spawned[1]})
+        if current_time > 0:
+            while chart_notes and chart_notes[0][0] <= current_time + 1500:
+                spawned = chart_notes.pop(0)
+                active_notes.append({"hit_time": spawned[0], "lane": spawned[1]})
 
         for note in active_notes[:]:
             time_difference = note["hit_time"] - current_time
@@ -148,8 +151,12 @@ def start_game():
         SCREEN.blit(get_font(25).render(acc_str, True, "#ffffff"), (1100, 40))
         SCREEN.blit(get_font(18).render(stat_str, True, "#aaaaaa"), (250, 40)) 
 
-        if current_time < 0:
-            ready_seconds = abs(current_time) // 1000 + 1
+        if -3000 <= current_time <= 500:
+            if current_time < 0:
+                ready_seconds = abs(current_time) // 1000 + 1
+            else:
+                ready_seconds = 0
+
             ready_text = get_font(60).render(str(ready_seconds), True, "#ff0000")
             SCREEN.blit(ready_text, (695, 350))
 
@@ -166,10 +173,10 @@ def start_game():
                 return
 
             if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_a:      pressed_lane = 0
-                elif event.key == pygame.K_s:    pressed_lane = 1
-                elif event.key == pygame.K_k:    pressed_lane = 2
-                elif event.key == pygame.K_l:    pressed_lane = 3
+                if event.key == pygame.K_a: pressed_lane = 0
+                elif event.key == pygame.K_s: pressed_lane = 1
+                elif event.key == pygame.K_k: pressed_lane = 2
+                elif event.key == pygame.K_l: pressed_lane = 3
 
                 if pressed_lane is not None:
                     for note in active_notes:
