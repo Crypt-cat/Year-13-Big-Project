@@ -234,12 +234,12 @@ def main_menu():
     """Handles the main menu screen."""
     pygame.display.set_caption("Menu")
 
-    menu_text = get_font(100).render("Main Menu", True, "#ffffff")
+    menu_text = get_font(100).render("Cadence Rush", True, "#ffffff")
     menu_rect = menu_text.get_rect(center=(720, 150))
 
-    play_button = Button(image=None, pos=(720, 350), text_input="PLAY", font=get_font(50), base_colour="#d7fcd4", hovering_colour="#ffffff")
-    options_button = Button(image=None, pos=(720, 500), text_input="OPTIONS", font=get_font(50), base_colour="#d7fcd4", hovering_colour="#ffffff")
-    quit_button = Button(image=None, pos=(720, 650), text_input="QUIT", font=get_font(50), base_colour="#d7fcd4", hovering_colour="#ffffff")
+    play_button = Button(image=None, pos=(720, 350), text_input="PLAY", font=get_font(50), base_colour="#ffffff", hovering_colour="#00ff00")
+    options_button = Button(image=None, pos=(720, 500), text_input="OPTIONS", font=get_font(50), base_colour="#ffffff", hovering_colour="#00ff00")
+    quit_button = Button(image=None, pos=(720, 650), text_input="QUIT", font=get_font(50), base_colour="#ffffff", hovering_colour="#00ff00")
 
     while True:
         SCREEN.blit(default_background, (-50, 0))
