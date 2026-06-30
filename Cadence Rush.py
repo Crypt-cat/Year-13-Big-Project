@@ -105,6 +105,7 @@ def start_game():
     scroll_speed = 0.5 
     
     counts = {"MAX": 0, "300": 0, "200": 0, "100": 0, "50": 0, "MISS": 0}
+    score = 0
     total_notes_played = 0
     accuracy = 100.0
 
@@ -147,9 +148,11 @@ def start_game():
 
         acc_str = f"ACC: {accuracy:.2f}%"
         stat_str = f"MAX:{counts['MAX']}  300:{counts['300']}  200:{counts['200']}  100:{counts['100']}  50:{counts['50']}  MISS:{counts['MISS']}"
+        score_str = f"SCORE: {score:07d}"
         
         SCREEN.blit(get_font(25).render(acc_str, True, "#ffffff"), (1100, 40))
-        SCREEN.blit(get_font(18).render(stat_str, True, "#aaaaaa"), (250, 40)) 
+        SCREEN.blit(get_font(18).render(stat_str, True, "#aaaaaa"), (250, 40))
+        SCREEN.blit(get_font(30).render(score_str, True, "#ffffff"), (1000, 780))
 
         if -3000 <= current_time <= 500:
             if current_time < 0:
@@ -185,14 +188,19 @@ def start_game():
 
                             if diff <= 16:
                                 counts["MAX"] += 1
+                                score += 320
                             elif diff <= 46:
                                 counts["300"] += 1
+                                score += 300
                             elif diff <= 79:
                                 counts["200"] += 1
+                                score += 200
                             elif diff <= 109:
                                 counts["100"] += 1
+                                score += 100
                             elif diff <= 133:
                                 counts["50"] += 1
+                                score += 50
                             else:
                                 continue
 
