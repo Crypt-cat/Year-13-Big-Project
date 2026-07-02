@@ -106,6 +106,8 @@ def start_game():
     
     counts = {"MAX": 0, "300": 0, "200": 0, "100": 0, "50": 0, "MISS": 0}
     score = 0
+    combo = 0
+    max_combo = 0
     total_notes_played = 0
     accuracy = 100.0
 
@@ -139,6 +141,7 @@ def start_game():
             if time_difference < -133: 
                 counts["MISS"] += 1
                 total_notes_played += 1
+                combo = 0
                 active_notes.remove(note)
 
         if total_notes_played > 0:
@@ -149,10 +152,13 @@ def start_game():
         acc_str = f"ACC: {accuracy:.2f}%"
         stat_str = f"MAX:{counts['MAX']}  300:{counts['300']}  200:{counts['200']}  100:{counts['100']}  50:{counts['50']}  MISS:{counts['MISS']}"
         score_str = f"SCORE: {score:07d}"
+        combo_str = f"{combo}x COMBO"
         
         SCREEN.blit(get_font(25).render(acc_str, True, "#ffffff"), (1100, 40))
         SCREEN.blit(get_font(18).render(stat_str, True, "#aaaaaa"), (250, 40))
         SCREEN.blit(get_font(30).render(score_str, True, "#ffffff"), (1000, 780))
+        SCREEN.blit(get_font(30).render(combo_str, True, "#ffffff"), (50, 780))
+        
 
         if -3000 <= current_time <= 500:
             if current_time < 0:
@@ -203,6 +209,10 @@ def start_game():
                                 score += 50
                             else:
                                 continue
+
+                            combo += 1
+                            if combo > max_combo:
+                                max_combo = combo
 
                             total_notes_played += 1
                             active_notes.remove(note)
