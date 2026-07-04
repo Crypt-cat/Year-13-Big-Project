@@ -115,18 +115,27 @@ def start_game():
     active_notes = []
     
     start_time = pygame.time.get_ticks()
-    back_button = Button(image=None, pos=(100, 50), text_input="BACK", font=get_font(30), base_colour="#ffffff", hovering_colour="#00ff00")
+
+    is_paused = False
+    pause_time_offset = 0 
+    pause_start_ticks = 0
+
+    resume_button = Button(image=None, pos=(720, 420), text_input="RESUME", font=get_font(40), base_colour="#ffffff", hovering_colour="#00ff00")
+    menu_button = Button(image=None, pos=(720, 520), text_input="MAIN MENU", font=get_font(40), base_colour="#ffffff", hovering_colour="#ff0000")
 
     while True:
         SCREEN.fill("black")
         mouse_pos = pygame.mouse.get_pos()
         
-        current_time = pygame.time.get_ticks() - start_time - 3000
+        current_ticks = pygame.time.get_ticks()
+
+        if not is_paused:
+            current_time = current_ticks - start_time - 3000 - pause_time_offset
 
         for lane_idx, x_pos in enumerate(lane_x_positions):
             SCREEN.blit(receptor_images[lane_idx], (x_pos, receptor_y))
-        
-        if current_time > 0:
+
+        if current_time > 0 and not is_paused:
             while chart_notes and chart_notes[0][0] <= current_time + 1500:
                 spawned = chart_notes.pop(0)
                 active_notes.append({"hit_time": spawned[0], "lane": spawned[1]})
@@ -138,7 +147,7 @@ def start_game():
             if -80 <= note_y <= 850:
                 SCREEN.blit(note_images[note["lane"]], (lane_x_positions[note["lane"]], note_y))
 
-            if time_difference < -133: 
+            if not is_paused and time_difference < -133: 
                 counts["MISS"] += 1
                 total_notes_played += 1
                 combo = 0
@@ -153,14 +162,13 @@ def start_game():
         stat_str = f"MAX:{counts['MAX']}  300:{counts['300']}  200:{counts['200']}  100:{counts['100']}  50:{counts['50']}  MISS:{counts['MISS']}"
         score_str = f"SCORE: {score:07d}"
         combo_str = f"{combo}x COMBO"
-        
+
         SCREEN.blit(get_font(25).render(acc_str, True, "#ffffff"), (1100, 40))
-        SCREEN.blit(get_font(18).render(stat_str, True, "#aaaaaa"), (250, 40))
+        SCREEN.blit(get_font(18).render(stat_str, True, "#aaaaaa"), (250, 40)) 
         SCREEN.blit(get_font(30).render(score_str, True, "#ffffff"), (1000, 780))
         SCREEN.blit(get_font(30).render(combo_str, True, "#ffffff"), (50, 780))
-        
 
-        if -3000 <= current_time <= 500:
+        if -3000 <= current_time <= 500 and not is_paused:
             if current_time < 0:
                 ready_seconds = abs(current_time) // 1000 + 1
             else:
@@ -169,54 +177,79 @@ def start_game():
             ready_text = get_font(60).render(str(ready_seconds), True, "#ff0000")
             SCREEN.blit(ready_text, (695, 350))
 
-        back_button.changeColor(mouse_pos)
-        back_button.update(SCREEN)
-                   
+        if is_paused:
+            overlay = pygame.Surface((1440, 850), pygame.SRCALPHA)
+            overlay.fill((0, 0, 0, 180))
+            SCREEN.blit(overlay, (0, 0))
+
+            pause_title = get_font(80).render("PAUSED", True, "#ffffff")
+            pause_rect = pause_title.get_rect(center=(720, 280))
+            SCREEN.blit(pause_title, pause_rect)
+
+            resume_button.changeColor(mouse_pos)
+            resume_button.update(SCREEN)
+            menu_button.changeColor(mouse_pos)
+            menu_button.update(SCREEN)
+
         pressed_lane = None
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
-                
-            if event.type == pygame.MOUSEBUTTONDOWN and back_button.checkForInput(mouse_pos):
-                return
+
+            if is_paused and event.type == pygame.MOUSEBUTTONDOWN:
+                if resume_button.checkForInput(mouse_pos):
+                    is_paused = False
+                    pause_time_offset += (current_ticks - pause_start_ticks)
+                if menu_button.checkForInput(mouse_pos):
+                    pygame.event.clear()
+                    return
 
             if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_a: pressed_lane = 0
-                elif event.key == pygame.K_s: pressed_lane = 1
-                elif event.key == pygame.K_k: pressed_lane = 2
-                elif event.key == pygame.K_l: pressed_lane = 3
+                if event.key == pygame.K_ESCAPE:
+                    if not is_paused:
+                        is_paused = True
+                        pause_start_ticks = current_ticks
+                    else:
+                        is_paused = False
+                        pause_time_offset += (current_ticks - pause_start_ticks)
 
-                if pressed_lane is not None:
-                    for note in active_notes:
-                        if note["lane"] == pressed_lane:
-                            diff = abs(note["hit_time"] - current_time)
+                if not is_paused:
+                    if event.key == pygame.K_a: pressed_lane = 0
+                    elif event.key == pygame.K_s: pressed_lane = 1
+                    elif event.key == pygame.K_k: pressed_lane = 2
+                    elif event.key == pygame.K_l: pressed_lane = 3
 
-                            if diff <= 16:
-                                counts["MAX"] += 1
-                                score += 320
-                            elif diff <= 46:
-                                counts["300"] += 1
-                                score += 300
-                            elif diff <= 79:
-                                counts["200"] += 1
-                                score += 200
-                            elif diff <= 109:
-                                counts["100"] += 1
-                                score += 100
-                            elif diff <= 133:
-                                counts["50"] += 1
-                                score += 50
-                            else:
-                                continue
+                    if pressed_lane is not None:
+                        for note in active_notes:
+                            if note["lane"] == pressed_lane:
+                                diff = abs(note["hit_time"] - current_time)
 
-                            combo += 1
-                            if combo > max_combo:
-                                max_combo = combo
+                                if diff <= 16:
+                                    counts["MAX"] += 1
+                                    score += 320
+                                elif diff <= 46:
+                                    counts["300"] += 1
+                                    score += 300
+                                elif diff <= 79:
+                                    counts["200"] += 1
+                                    score += 200
+                                elif diff <= 109:
+                                    counts["100"] += 1
+                                    score += 100
+                                elif diff <= 133:
+                                    counts["50"] += 1
+                                    score += 50
+                                else:
+                                    continue
 
-                            total_notes_played += 1
-                            active_notes.remove(note)
-                            break
+                                combo += 1
+                                if combo > max_combo:
+                                    max_combo = combo
+
+                                total_notes_played += 1
+                                active_notes.remove(note)
+                                break
 
         pygame.display.flip()
         clock.tick(60)
@@ -275,6 +308,11 @@ def main_menu():
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if play_button.checkForInput(menu_mouse_pos):
                     start_game()
+
+                    while pygame.mouse.get_pressed()[0]:
+                        pygame.event.pump()
+                    pygame.event.clear()
+
                     pygame.display.set_caption("Menu")
                 if options_button.checkForInput(menu_mouse_pos):
                     options()
