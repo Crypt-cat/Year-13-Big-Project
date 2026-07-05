@@ -124,13 +124,15 @@ def start_game():
     menu_button = Button(image=None, pos=(720, 520), text_input="MAIN MENU", font=get_font(40), base_colour="#ffffff", hovering_colour="#ff0000")
 
     while True:
-        SCREEN.fill("black")
+        SCREEN.blit(default_background, (-50, 0))
         mouse_pos = pygame.mouse.get_pos()
         
         current_ticks = pygame.time.get_ticks()
 
         if not is_paused:
             current_time = current_ticks - start_time - 3000 - pause_time_offset
+
+        pygame.draw.rect(SCREEN, (0, 0, 0), (490, 0, 440, 850))
 
         for lane_idx, x_pos in enumerate(lane_x_positions):
             SCREEN.blit(receptor_images[lane_idx], (x_pos, receptor_y))
