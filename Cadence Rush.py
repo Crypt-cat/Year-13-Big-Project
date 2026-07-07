@@ -22,10 +22,10 @@ receptor_images = {0: outline_left, 1: outline_down, 2: outline_up, 3: outline_r
 note_images     = {0: note_left,     1: note_down,     2: note_up,     3: note_right}
 
 class Button():
-    """Button class to easily create buttons for my program and automatically """
+    """Button class to easily create buttons for my program and automatically."""
 
     def __init__(self, image, pos, text_input, font, base_colour, hovering_colour):
-        """Initializes the components of the button"""
+        """Initializes the components of the button."""
         self.image = image
         self.x_pos = pos[0]
         self.y_pos = pos[1]
@@ -51,8 +51,8 @@ class Button():
             return True
         return False
 
-    def changeColor(self, position):
-        """Changes the text color if the mouse is hovering over the button."""
+    def changeColour(self, position):
+        """Changes the text colour if the mouse is hovering over the button."""
         if position[0] in range(self.rect.left, self.rect.right) and position[1] in range(self.rect.top, self.rect.bottom):
             self.text = self.font.render(self.text_input, True, self.hovering_colour)
         else:
@@ -184,13 +184,13 @@ def start_game():
             overlay.fill((0, 0, 0, 180))
             SCREEN.blit(overlay, (0, 0))
 
-            pause_title = get_font(80).render("PAUSED", True, "#ffffff")
+            pause_title = get_font(80).render("PAUSED", True, "#ff00ff")
             pause_rect = pause_title.get_rect(center=(720, 280))
             SCREEN.blit(pause_title, pause_rect)
 
-            resume_button.changeColor(mouse_pos)
+            resume_button.changeColour(mouse_pos)
             resume_button.update(SCREEN)
-            menu_button.changeColor(mouse_pos)
+            menu_button.changeColour(mouse_pos)
             menu_button.update(SCREEN)
 
         pressed_lane = None
@@ -256,6 +256,61 @@ def start_game():
         pygame.display.flip()
         clock.tick(60)
 
+def instructions_page():
+    """Displays the Instructions."""
+    pygame.display.set_caption("How to Play")
+
+    title_text = get_font(60).render("HOW TO PLAY", True, "#00ff00")
+    title_rect = title_text.get_rect(center=(720, 80))
+
+    lines = [
+        "CONTROLS:",
+        "• Lane 1 (Left):   Key 'A'",
+        "• Lane 2 (Down):   Key 'S'",
+        "• Lane 3 (Up):     Key 'K'",
+        "• Lane 4 (Right):  Key 'L'",
+        "",
+        "SCORING:",
+        "• MAX: 320 Points   • 300: 300 Points",
+        "• 200: 200 Points   • 100: 100 Points",
+        "• 50:  50 Points    • MISS: 0 Points",
+        "",
+        "PAUSE/EXIT GAME: Press 'ESC' mid-level",
+        "",
+        "AIM:",
+        "Hit the notes and build up your combo.",
+        "Aim for high accuracy and get the best possible score!"
+    ]
+
+    back_button = Button(image=None, pos=(180, 65), text_input="BACK", font=get_font(40), base_colour="#ffffff", hovering_colour="#00ff00")
+
+    while True:
+        SCREEN.blit(default_background, (-50, 0))
+
+        overlay = pygame.Surface((1280, 800), pygame.SRCALPHA)
+        overlay.fill((0, 0, 0, 220))
+        SCREEN.blit(overlay, (80, 25))
+
+        SCREEN.blit(title_text, title_rect)
+        mouse_pos = pygame.mouse.get_pos()
+
+        for idx, line in enumerate(lines):
+            text_render = get_font(20).render(line, True, "#ffffff")
+            SCREEN.blit(text_render, (160, 130 + (idx * 42)))
+
+        back_button.changeColour(mouse_pos)
+        back_button.update(SCREEN)
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                if back_button.checkForInput(mouse_pos):
+                    return
+
+        pygame.display.flip()
+        clock.tick(60)
 
 def options():
     pygame.display.set_caption("Options")
@@ -270,7 +325,7 @@ def options():
         SCREEN.blit(options_text, options_rect)
         mouse_pos = pygame.mouse.get_pos()
         
-        back_button.changeColor(mouse_pos)
+        back_button.changeColour(mouse_pos)
         back_button.update(SCREEN)
         
         for event in pygame.event.get():
@@ -287,20 +342,21 @@ def main_menu():
     """Handles the main menu screen."""
     pygame.display.set_caption("Menu")
 
-    menu_text = get_font(100).render("Cadence Rush", True, "#ffffff")
-    menu_rect = menu_text.get_rect(center=(720, 150))
+    menu_text = get_font(100).render("Cadence Rush", True, "#00fbff")
+    menu_rect = menu_text.get_rect(center=(720, 110))
 
-    play_button = Button(image=None, pos=(720, 350), text_input="PLAY", font=get_font(50), base_colour="#ffffff", hovering_colour="#00ff00")
-    options_button = Button(image=None, pos=(720, 500), text_input="OPTIONS", font=get_font(50), base_colour="#ffffff", hovering_colour="#00ff00")
-    quit_button = Button(image=None, pos=(720, 650), text_input="QUIT", font=get_font(50), base_colour="#ffffff", hovering_colour="#00ff00")
+    play_button = Button(image=None, pos=(720, 320), text_input="PLAY", font=get_font(50), base_colour="#ffffff", hovering_colour="#00ff00")
+    options_button = Button(image=None, pos=(720, 430), text_input="OPTIONS", font=get_font(50), base_colour="#ffffff", hovering_colour="#00ff00")
+    instructions_button = Button(image=None, pos=(720, 540), text_input="INSTRUCTIONS", font=get_font(50), base_colour="#ffffff", hovering_colour="#00ff00")
+    quit_button = Button(image=None, pos=(720, 650), text_input="QUIT", font=get_font(50), base_colour="#ffffff", hovering_colour="#ff0000")
 
     while True:
         SCREEN.blit(default_background, (-50, 0))
         SCREEN.blit(menu_text, menu_rect)
         menu_mouse_pos = pygame.mouse.get_pos()
 
-        for button in [play_button, options_button, quit_button]:
-            button.changeColor(menu_mouse_pos)
+        for button in [play_button, options_button, instructions_button, quit_button]:
+            button.changeColour(menu_mouse_pos)
             button.update(SCREEN)
 
         for event in pygame.event.get():
@@ -318,6 +374,9 @@ def main_menu():
                     pygame.display.set_caption("Menu")
                 if options_button.checkForInput(menu_mouse_pos):
                     options()
+                    pygame.display.set_caption("Menu")
+                if instructions_button.checkForInput(menu_mouse_pos):
+                    instructions_page()
                     pygame.display.set_caption("Menu")
                 if quit_button.checkForInput(menu_mouse_pos):
                     pygame.quit()
