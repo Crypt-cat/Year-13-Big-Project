@@ -111,6 +111,17 @@ def start_game():
     total_notes_played = 0
     accuracy = 100.0
 
+    hit_indicators = []
+
+    JUDGEMENT_COLOURS = {
+        "MAX!": "#00ffff",   
+        "300":  "#00ff00",   
+        "200":  "#ffff00",   
+        "100":  "#ffaa00",  
+        "50":   "#ff5500",   
+        "MISS": "#ff0000"    
+    }
+
     chart_notes = list(NIGHT_OF_NIGHTS_CHART)
     active_notes = []
     
@@ -153,7 +164,30 @@ def start_game():
                 counts["MISS"] += 1
                 total_notes_played += 1
                 combo = 0
+
+                indicator_x = lane_x_positions[note["lane"]] + 40
+                hit_indicators.append({"text": "MISS", "colour": JUDGEMENT_COLOURS["MISS"], "x": indicator_x, "y": 620, "spawn_time": current_ticks})
+
                 active_notes.remove(note)
+
+        for indicator in hit_indicators[:]:
+            elapsed = current_ticks - indicator["spawn_time"]
+            
+            if elapsed > 400:
+                hit_indicators.remove(indicator)
+                continue
+
+            float_y = indicator["y"] - (elapsed * 0.08)
+            
+            alpha = max(0, 255 - int((elapsed / 400) * 255))
+
+            font_surface = get_font(24).render(indicator["text"], True, indicator["colour"])
+            alpha_surface = pygame.Surface(font_surface.get_size(), pygame.SRCALPHA)
+            alpha_surface.blit(font_surface, (0, 0))
+            alpha_surface.set_alpha(alpha)
+
+            rect = alpha_surface.get_rect(center=(indicator["x"], float_y))
+            SCREEN.blit(alpha_surface, rect)
 
         if total_notes_played > 0:
             numerator = 300 * (counts["MAX"] + counts["300"]) + 200 * counts["200"] + 100 * counts["100"] + 50 * counts["50"]
@@ -230,20 +264,28 @@ def start_game():
                                 if diff <= 16:
                                     counts["MAX"] += 1
                                     score += 320
+                                    rating = "MAX!"
                                 elif diff <= 46:
                                     counts["300"] += 1
                                     score += 300
+                                    rating = "300"
                                 elif diff <= 79:
                                     counts["200"] += 1
                                     score += 200
+                                    rating = "200"
                                 elif diff <= 109:
                                     counts["100"] += 1
                                     score += 100
+                                    rating = "100"
                                 elif diff <= 133:
                                     counts["50"] += 1
                                     score += 50
+                                    rating = "50"
                                 else:
                                     continue
+
+                                indicator_x = lane_x_positions[pressed_lane] + 40
+                                hit_indicators.append({"text": rating, "colour": JUDGEMENT_COLOURS[rating], "x": indicator_x, "y": 620, "spawn_time": current_ticks})
 
                                 combo += 1
                                 if combo > max_combo:
