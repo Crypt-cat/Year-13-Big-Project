@@ -131,8 +131,9 @@ def start_game():
     pause_time_offset = 0 
     pause_start_ticks = 0
 
-    resume_button = Button(image=None, pos=(720, 420), text_input="RESUME", font=get_font(40), base_colour="#ffffff", hovering_colour="#00ff00")
-    menu_button = Button(image=None, pos=(720, 520), text_input="MAIN MENU", font=get_font(40), base_colour="#ffffff", hovering_colour="#ff0000")
+    resume_button = Button(image=None, pos=(720, 320), text_input="RESUME", font=get_font(40), base_colour="#ffffff", hovering_colour="#00ff00")
+    restart_button = Button(image=None, pos=(720, 430), text_input="RESTART", font=get_font(45), base_colour="#ffffff", hovering_colour="#fbff00")
+    menu_button = Button(image=None, pos=(720, 540), text_input="MAIN MENU", font=get_font(40), base_colour="#ffffff", hovering_colour="#ff0000")
 
     while True:
         SCREEN.blit(default_background, (-50, 0))
@@ -219,13 +220,12 @@ def start_game():
             SCREEN.blit(overlay, (0, 0))
 
             pause_title = get_font(80).render("PAUSED", True, "#ff00ff")
-            pause_rect = pause_title.get_rect(center=(720, 280))
+            pause_rect = pause_title.get_rect(center=(720, 160))
             SCREEN.blit(pause_title, pause_rect)
 
-            resume_button.changeColour(mouse_pos)
-            resume_button.update(SCREEN)
-            menu_button.changeColour(mouse_pos)
-            menu_button.update(SCREEN)
+            for button in [resume_button, restart_button, menu_button]:
+                button.changeColour(mouse_pos)
+                button.update(SCREEN)
 
         pressed_lane = None
         for event in pygame.event.get():
@@ -237,6 +237,12 @@ def start_game():
                 if resume_button.checkForInput(mouse_pos):
                     is_paused = False
                     pause_time_offset += (current_ticks - pause_start_ticks)
+
+                if restart_button.checkForInput(mouse_pos):
+                    pygame.event.clear()
+                    start_game()
+                    return
+
                 if menu_button.checkForInput(mouse_pos):
                     pygame.event.clear()
                     return
