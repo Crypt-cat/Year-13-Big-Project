@@ -97,6 +97,68 @@ for i in range(64):
     if lane != -1:
         NIGHT_OF_NIGHTS_CHART.append([t, lane])
 
+def end_screen(score, max_combo, accuracy, counts, JUDGEMENT_COLOURS):
+    """Displays the stage clear results screen upon level completion."""
+    pygame.display.set_caption("Stage Clear")
+    
+    menu_button = Button(image=None, pos=(720, 750), text_input="MAIN MENU", font=get_font(40), base_colour="#ffffff", hovering_colour="#00ff00")
+
+    while True:
+        mouse_pos = pygame.mouse.get_pos()
+        SCREEN.blit(default_background, (-50, 0))
+
+        overlay = pygame.Surface((1280, 800), pygame.SRCALPHA)
+        overlay.fill((0, 0, 0, 220))
+        SCREEN.blit(overlay, (80, 25))
+
+        title_text = get_font(60).render("STAGE CLEAR", True, "#00ff00")
+        title_rect = title_text.get_rect(center=(720, 100))
+        SCREEN.blit(title_text, title_rect)
+
+        score_surface = get_font(32).render(f"FINAL SCORE: {score:07d}", True, "#ffffff")
+        combo_surface = get_font(32).render(f"MAX COMBO:   {max_combo}x", True, "#ffffff")
+        acc_surface   = get_font(32).render(f"ACCURACY:    {accuracy:.2f}%", True, "#ffffff")
+
+        SCREEN.blit(score_surface, (160, 220))
+        SCREEN.blit(combo_surface, (160, 290))
+        SCREEN.blit(acc_surface,   (160, 360))
+
+        breakdown_title = get_font(30).render("JUDGEMENTS", True, "#aaaaaa")
+        SCREEN.blit(breakdown_title, (850, 200))
+
+        y_offset = 260
+        judgements = [
+            ("MAX!", counts["MAX"], JUDGEMENT_COLOURS["MAX!"]),
+            ("300",  counts["300"], JUDGEMENT_COLOURS["300"]),
+            ("200",  counts["200"], JUDGEMENT_COLOURS["200"]),
+            ("100",  counts["100"], JUDGEMENT_COLOURS["100"]),
+            ("50",   counts["50"],  JUDGEMENT_COLOURS["50"]),
+            ("MISS", counts["MISS"], JUDGEMENT_COLOURS["MISS"])
+        ]
+
+        for label, val, colour in judgements:
+            lbl_surface = get_font(25).render(f"{label}:", True, colour)
+            val_surface = get_font(25).render(f"{val}", True, "#ffffff")
+            SCREEN.blit(lbl_surface, (850, y_offset))
+            SCREEN.blit(val_surface, (1020, y_offset))
+            y_offset += 50
+
+        menu_button.changeColour(mouse_pos)
+        menu_button.update(SCREEN)
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                if menu_button.checkForInput(mouse_pos):
+                    pygame.event.clear()
+                    return
+
+        pygame.display.flip()
+        clock.tick(60)
+
 def start_game():
     pygame.display.set_caption("Cadence Rush")
 
@@ -130,6 +192,7 @@ def start_game():
     is_paused = False
     pause_time_offset = 0 
     pause_start_ticks = 0
+    level_complete_time = None
 
     resume_button = Button(image=None, pos=(720, 320), text_input="RESUME", font=get_font(40), base_colour="#ffffff", hovering_colour="#00ff00")
     restart_button = Button(image=None, pos=(720, 430), text_input="RESTART", font=get_font(45), base_colour="#ffffff", hovering_colour="#fbff00")
@@ -196,12 +259,10 @@ def start_game():
             accuracy = (numerator / denominator) * 100
 
         acc_str = f"ACC: {accuracy:.2f}%"
-        stat_str = f"MAX:{counts['MAX']}  300:{counts['300']}  200:{counts['200']}  100:{counts['100']}  50:{counts['50']}  MISS:{counts['MISS']}"
         score_str = f"SCORE: {score:07d}"
         combo_str = f"{combo}x COMBO"
 
         SCREEN.blit(get_font(25).render(acc_str, True, "#ffffff"), (1100, 40))
-        SCREEN.blit(get_font(18).render(stat_str, True, "#aaaaaa"), (250, 40)) 
         SCREEN.blit(get_font(30).render(score_str, True, "#ffffff"), (1000, 780))
         SCREEN.blit(get_font(30).render(combo_str, True, "#ffffff"), (50, 780))
 
@@ -300,6 +361,13 @@ def start_game():
                                 total_notes_played += 1
                                 active_notes.remove(note)
                                 break
+
+        if total_notes_played > 0 and len(chart_notes) == 0 and len(active_notes) == 0:
+            if level_complete_time is None:
+                level_complete_time = current_ticks
+            elif current_ticks - level_complete_time >= 2000:
+                end_screen(score, max_combo, accuracy, counts, JUDGEMENT_COLOURS)
+                return
 
         pygame.display.flip()
         clock.tick(60)
