@@ -7,6 +7,7 @@ SCREEN = pygame.display.set_mode((1440, 850))
 clock = pygame.time.Clock()
 
 default_background = pygame.image.load("Year-13-Big-project/assets/CadenceRushBackground.png").convert()
+background_dim_enabled = False
 
 outline_up  = pygame.transform.scale(pygame.image.load("Year-13-Big-project/assets/Arrow_Outline_1.png").convert_alpha(), (80, 80))
 outline_left  = pygame.transform.scale(pygame.image.load("Year-13-Big-project/assets/Arrow_Outline_2.png").convert_alpha(), (80, 80))
@@ -160,6 +161,8 @@ def end_screen(score, max_combo, accuracy, counts, JUDGEMENT_COLOURS):
         clock.tick(60)
 
 def start_game():
+    global background_dim_enabled
+
     pygame.display.set_caption("Cadence Rush")
 
     lane_x_positions = [520, 620, 720, 820]
@@ -199,7 +202,10 @@ def start_game():
     menu_button = Button(image=None, pos=(720, 540), text_input="MAIN MENU", font=get_font(40), base_colour="#ffffff", hovering_colour="#ff0000")
 
     while True:
-        SCREEN.blit(default_background, (-50, 0))
+        if background_dim_enabled:
+            SCREEN.fill("black")
+        else:
+            SCREEN.blit(default_background, (-50, 0))
         mouse_pos = pygame.mouse.get_pos()
         
         current_ticks = pygame.time.get_ticks()
@@ -429,17 +435,38 @@ def instructions_page():
         clock.tick(60)
 
 def options():
+    global background_dim_enabled
     pygame.display.set_caption("Options")
 
     back_button = Button(image=None, pos=(720, 600), text_input="BACK", font=get_font(40), base_colour="#ffffff", hovering_colour="#00ff00")
     
     options_text = get_font(60).render("Options", True, "#ffffff")
-    options_rect = options_text.get_rect(center=(720, 300))
+    options_rect = options_text.get_rect(center=(720, 150))
+    
+    label_text = get_font(30).render("BLACK BACKGROUND:", True, "#ffffff")
+    label_rect = label_text.get_rect(center=(600, 350))
     
     while True:
         SCREEN.fill("black")
         SCREEN.blit(options_text, options_rect)
+        SCREEN.blit(label_text, label_rect)
+        
         mouse_pos = pygame.mouse.get_pos()
+
+        toggle_text = "ON" if background_dim_enabled else "OFF"
+        toggle_colour = "#00ff00" if background_dim_enabled else "#ff0000"
+        
+        toggle_button = Button(
+            image=None, 
+            pos=(900, 350), 
+            text_input=toggle_text, 
+            font=get_font(35), 
+            base_colour=toggle_colour, 
+            hovering_colour="#ffffff"
+        )
+        
+        toggle_button.changeColour(mouse_pos)
+        toggle_button.update(SCREEN)
         
         back_button.changeColour(mouse_pos)
         back_button.update(SCREEN)
@@ -449,6 +476,8 @@ def options():
                 pygame.quit()
                 sys.exit()
             if event.type == pygame.MOUSEBUTTONDOWN:
+                if toggle_button.checkForInput(mouse_pos):
+                    background_dim_enabled = not background_dim_enabled
                 if back_button.checkForInput(mouse_pos):
                     return
                     
