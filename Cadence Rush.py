@@ -9,6 +9,11 @@ clock = pygame.time.Clock()
 default_background = pygame.image.load("Year-13-Big-project/assets/CadenceRushBackground.png").convert()
 background_dim_enabled = False
 
+MAX_HEALTH = 100
+HEALTH_GAIN_MAX = 2
+HEALTH_GAIN_HIT = 1
+HEALTH_LOSS_MISS = 7
+
 outline_up  = pygame.transform.scale(pygame.image.load("Year-13-Big-project/assets/Arrow_Outline_1.png").convert_alpha(), (80, 80))
 outline_left  = pygame.transform.scale(pygame.image.load("Year-13-Big-project/assets/Arrow_Outline_2.png").convert_alpha(), (80, 80))
 outline_down    = pygame.transform.scale(pygame.image.load("Year-13-Big-project/assets/Arrow_Outline_3.png").convert_alpha(), (80, 80))
@@ -160,8 +165,77 @@ def end_screen(score, max_combo, accuracy, counts, JUDGEMENT_COLOURS):
         pygame.display.flip()
         clock.tick(60)
 
+def draw_health_bar(surface, x, y, width, height, current_health, max_health):
+    current_health = max(0, min(current_health, max_health))
+
+    bg_rect = pygame.Rect(x, y, width, height)
+    pygame.draw.rect(surface, (50, 0, 0), bg_rect, border_radius=4)
+
+    health_ratio = current_health / max_health
+    fill_width = int(width * health_ratio)
+    fill_rect = pygame.Rect(x, y, fill_width, height)
+
+    if health_ratio > 0.5:
+        bar_color = (0, 255, 100)
+    elif health_ratio > 0.25:
+        bar_color = (255, 200, 0)
+    else:
+        bar_color = (255, 50, 50)
+        
+    if fill_width > 0:
+        pygame.draw.rect(surface, bar_color, fill_rect, border_radius=4)
+
+    pygame.draw.rect(surface, (255, 255, 255), bg_rect, width=2, border_radius=4)
+
+def game_over_screen():
+    pygame.display.set_caption("Game Over")
+
+    center_x = SCREEN.get_width() // 2
+
+    title_text = get_font(60).render("GAME OVER", True, "#ff0000")
+    title_rect = title_text.get_rect(center=(center_x, 200))
+
+    sub_text = get_font(25).render("You ran out of health!", True, "#ffffff")
+    sub_rect = sub_text.get_rect(center=(center_x, 270))
+
+    restart_button = Button(image=None, pos=(center_x, 380), text_input="RESTART", font=get_font(40), base_colour="#ffffff", hovering_colour="#00ff00")
+
+    menu_button = Button(image=None, pos=(center_x, 480), text_input="MAIN MENU", font=get_font(40), base_colour="#ffffff", hovering_colour="#00ff00")
+
+    overlay = pygame.Surface(SCREEN.get_size())
+    overlay.set_alpha(200)
+    overlay.fill((0, 0, 0))
+
+    while True:
+        SCREEN.blit(overlay, (0, 0))
+        SCREEN.blit(title_text, title_rect)
+        SCREEN.blit(sub_text, sub_rect)
+
+        mouse_pos = pygame.mouse.get_pos()
+
+        restart_button.changeColour(mouse_pos)
+        restart_button.update(SCREEN)
+
+        menu_button.changeColour(mouse_pos)
+        menu_button.update(SCREEN)
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+
+            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                if restart_button.checkForInput(mouse_pos):
+                    return "restart"
+                if menu_button.checkForInput(mouse_pos):
+                    return "menu"
+
+        pygame.display.flip()
+        clock.tick(60)
+
 def start_game():
     global background_dim_enabled
+    health = MAX_HEALTH
 
     pygame.display.set_caption("Cadence Rush")
 
@@ -230,7 +304,8 @@ def start_game():
             if -80 <= note_y <= 850:
                 SCREEN.blit(note_images[note["lane"]], (lane_x_positions[note["lane"]], note_y))
 
-            if not is_paused and time_difference < -133: 
+            if not is_paused and time_difference < -133:
+                health = max(0.0, health - HEALTH_LOSS_MISS)
                 counts["MISS"] += 1
                 total_notes_played += 1
                 combo = 0
@@ -267,6 +342,33 @@ def start_game():
         acc_str = f"ACC: {accuracy:.2f}%"
         score_str = f"SCORE: {score:07d}"
         combo_str = f"{combo}x COMBO"
+
+        health_ratio = health / MAX_HEALTH
+        bar_x, bar_y, bar_width, bar_height = 40, 40, 300, 20
+        
+        pygame.draw.rect(SCREEN, (50, 0, 0), (bar_x, bar_y, bar_width, bar_height), border_radius=4)
+        
+        if health_ratio > 0.5:
+            bar_color = (0, 255, 100)
+        elif health_ratio > 0.25:
+            bar_color = (255, 200, 0)
+        else:
+            bar_color = (255, 50, 50)
+            
+        fill_w = int(bar_width * health_ratio)
+        if fill_w > 0:
+            pygame.draw.rect(SCREEN, bar_color, (bar_x, bar_y, fill_w, bar_height), border_radius=4)
+        pygame.draw.rect(SCREEN, (255, 255, 255), (bar_x, bar_y, bar_width, bar_height), width=2, border_radius=4)
+
+        if health <= 0:
+            action = game_over_screen()
+            if action == "restart":
+                pygame.event.clear()
+                start_game()
+                return
+            elif action == "menu":
+                pygame.event.clear()
+                return
 
         SCREEN.blit(get_font(25).render(acc_str, True, "#ffffff"), (1100, 40))
         SCREEN.blit(get_font(30).render(score_str, True, "#ffffff"), (1000, 780))
@@ -338,22 +440,27 @@ def start_game():
                                     counts["MAX"] += 1
                                     score += 320
                                     rating = "MAX!"
+                                    health = min(MAX_HEALTH, health + HEALTH_GAIN_MAX)
                                 elif diff <= 46:
                                     counts["300"] += 1
                                     score += 300
                                     rating = "300"
+                                    health = min(MAX_HEALTH, health + HEALTH_GAIN_HIT)
                                 elif diff <= 79:
                                     counts["200"] += 1
                                     score += 200
                                     rating = "200"
+                                    health = min(MAX_HEALTH, health + HEALTH_GAIN_HIT)
                                 elif diff <= 109:
                                     counts["100"] += 1
                                     score += 100
                                     rating = "100"
+                                    health = min(MAX_HEALTH, health + HEALTH_GAIN_HIT)
                                 elif diff <= 133:
                                     counts["50"] += 1
                                     score += 50
                                     rating = "50"
+                                    health = min(MAX_HEALTH, health + HEALTH_GAIN_HIT)
                                 else:
                                     continue
 
