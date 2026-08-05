@@ -233,6 +233,11 @@ def game_over_screen():
         pygame.display.flip()
         clock.tick(60)
 
+def get_combo_multiplier(combo_before_hit):
+    if combo_before_hit <= 1:
+        return 0
+    return combo_before_hit - 1
+
 def start_game():
     global background_dim_enabled
     health = MAX_HEALTH
@@ -438,31 +443,35 @@ def start_game():
 
                                 if diff <= 16:
                                     counts["MAX"] += 1
-                                    score += 320
+                                    base_score = 320
                                     rating = "MAX!"
                                     health = min(MAX_HEALTH, health + HEALTH_GAIN_MAX)
                                 elif diff <= 46:
                                     counts["300"] += 1
-                                    score += 300
+                                    base_score = 300
                                     rating = "300"
                                     health = min(MAX_HEALTH, health + HEALTH_GAIN_HIT)
                                 elif diff <= 79:
                                     counts["200"] += 1
-                                    score += 200
+                                    base_score = 200
                                     rating = "200"
                                     health = min(MAX_HEALTH, health + HEALTH_GAIN_HIT)
                                 elif diff <= 109:
                                     counts["100"] += 1
-                                    score += 100
+                                    base_score = 100
                                     rating = "100"
                                     health = min(MAX_HEALTH, health + HEALTH_GAIN_HIT)
                                 elif diff <= 133:
                                     counts["50"] += 1
-                                    score += 50
+                                    base_score = 50
                                     rating = "50"
                                     health = min(MAX_HEALTH, health + HEALTH_GAIN_HIT)
                                 else:
                                     continue
+
+                                current_multiplier = 1.0 if combo <= 1 else 1.0 + (combo - 1) * 0.1
+
+                                score += int(base_score * current_multiplier)
 
                                 indicator_x = lane_x_positions[pressed_lane] + 40
                                 hit_indicators.append({"text": rating, "colour": JUDGEMENT_COLOURS[rating], "x": indicator_x, "y": 620, "spawn_time": current_ticks})
