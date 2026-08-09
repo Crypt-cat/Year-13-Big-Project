@@ -1,5 +1,6 @@
 import pygame
 import sys
+import random
 
 pygame.init()
 
@@ -26,6 +27,65 @@ note_right = pygame.transform.scale(pygame.image.load("Year-13-Big-project/asset
 
 receptor_images = {0: outline_left, 1: outline_down, 2: outline_up, 3: outline_right}
 note_images     = {0: note_left,     1: note_down,     2: note_up,     3: note_right}
+
+PATTERN_EASY = [
+    [(0, 0), (1, 300), (2, 600), (3, 900)],       
+    [(3, 0), (2, 300), (1, 600), (0, 900)],    
+    [(0, 0), (2, 300), (1, 600), (3, 900)],           
+    [(1, 0), (2, 400), (1, 800), (2, 1200)],           
+]
+
+PATTERN_MEDIUM = [
+    [(0, 0), (3, 0), (1, 300), (2, 300)],            
+    [(0, 0), (1, 150), (2, 300), (3, 450), (2, 600)],  
+    [(0, 0), (2, 200), (0, 400), (3, 600), (1, 800)],  
+    [(1, 0), (1, 200), (2, 400), (2, 600)],            
+]
+
+PATTERN_HARD = [
+    [(0, 0), (1, 100), (2, 200), (3, 300), (0, 400), (1, 500)], 
+    [(0, 0), (3, 0), (1, 200), (2, 200), (0, 400), (3, 400)],  
+    [(0, 0), (2, 120), (1, 240), (3, 360), (0, 480)],          
+    [(1, 0), (2, 0), (0, 250), (3, 250), (1, 500), (2, 500)],  
+]
+
+PATTERN_EXPERT = [
+    [(0, 0), (1, 80), (2, 160), (3, 240), (2, 320), (1, 400), (0, 480)], 
+    [(0, 0), (3, 0), (1, 120), (2, 120), (0, 240), (3, 240)],          
+    [(0, 0), (1, 90), (0, 180), (2, 270), (3, 360), (2, 450)],           
+]
+
+def generate_next_pattern(last_note_time, distance_traveled):
+    if distance_traveled < 15000:       
+        pool = PATTERN_EASY
+        gap_between_patterns = 400
+    elif distance_traveled < 35000:    
+        pool = PATTERN_EASY + PATTERN_MEDIUM
+        gap_between_patterns = 250
+    elif distance_traveled < 65000:    
+        pool = PATTERN_MEDIUM + PATTERN_HARD
+        gap_between_patterns = 180
+    else:                              
+        pool = PATTERN_HARD + PATTERN_EXPERT
+        gap_between_patterns = 120
+
+    chosen_pattern = random.choice(pool)
+    
+    should_mirror = random.choice([True, False])
+    lane_shift = random.randint(0, 3)
+
+    new_notes = []
+    base_time = last_note_time + gap_between_patterns
+
+    for lane, rel_time in chosen_pattern:
+        final_lane = (3 - lane) if should_mirror else lane
+        final_lane = (final_lane + lane_shift) % 4
+
+        spawn_time = base_time + rel_time
+        new_notes.append({"lane": final_lane, "hit_time": spawn_time})
+
+    max_block_time = max(rel_time for _, rel_time in chosen_pattern)
+    return new_notes, base_time + max_block_time
 
 class Button():
     """Button class to easily create buttons for my program and automatically."""
@@ -69,45 +129,13 @@ def get_font(size):
     """Returns the custom font along with the size that was inputted."""
     return pygame.font.Font("Year-13-Big-project/assets/font.ttf", size)
 
-CHART_OFFSET = 1400
-
-NIGHT_OF_NIGHTS_CHART = []
-
-start_intro = 0 + CHART_OFFSET
-for i in range(24):
-    lane = i % 4 if (i // 4) % 2 == 0 else 3 - (i % 4)
-    NIGHT_OF_NIGHTS_CHART.append([start_intro + int(i * 333.33), lane])
-
-start_verse = int(24 * 333.33) + 500 + CHART_OFFSET
-for i in range(16):
-    t_base = start_verse + int(i * 666.66)
-    NIGHT_OF_NIGHTS_CHART.append([t_base, 0])
-    NIGHT_OF_NIGHTS_CHART.append([t_base + 166, 1])
-    NIGHT_OF_NIGHTS_CHART.append([t_base + 333, 2])
-
-start_pre = start_verse + int(16 * 666.66)
-for i in range(12):
-    t_base = start_pre + int(i * 333.33)
-    if i % 2 == 0:
-        NIGHT_OF_NIGHTS_CHART.append([t_base, 0])
-        NIGHT_OF_NIGHTS_CHART.append([t_base, 3])
-    else:
-        NIGHT_OF_NIGHTS_CHART.append([t_base, 1])
-        NIGHT_OF_NIGHTS_CHART.append([t_base, 2])
-
-start_drop = start_pre + int(12 * 333.33)
-stair_pattern = [0, 1, 2, 3, 2, 1, 0, 1, 2, 3, 2, 1, 0, -1, 3, -1]
-for i in range(64):
-    t = start_drop + int(i * 166.66)
-    lane = stair_pattern[i % len(stair_pattern)]
-    if lane != -1:
-        NIGHT_OF_NIGHTS_CHART.append([t, lane])
 
 def end_screen(score, max_combo, accuracy, counts, JUDGEMENT_COLOURS):
     """Displays the stage clear results screen upon level completion."""
     pygame.display.set_caption("Stage Clear")
     
-    menu_button = Button(image=None, pos=(720, 750), text_input="MAIN MENU", font=get_font(40), base_colour="#ffffff", hovering_colour="#00ff00")
+    restart_button = Button(image=None, pos=(520, 750), text_input="RESTART", font=get_font(40), base_colour="#ffffff", hovering_colour="#00ff00")
+    menu_button = Button(image=None, pos=(920, 750), text_input="MAIN MENU", font=get_font(40), base_colour="#ffffff", hovering_colour="#ff0000")
 
     while True:
         mouse_pos = pygame.mouse.get_pos()
@@ -149,6 +177,9 @@ def end_screen(score, max_combo, accuracy, counts, JUDGEMENT_COLOURS):
             SCREEN.blit(val_surface, (1020, y_offset))
             y_offset += 50
 
+        restart_button.changeColour(mouse_pos)
+        restart_button.update(SCREEN)
+
         menu_button.changeColour(mouse_pos)
         menu_button.update(SCREEN)
 
@@ -157,10 +188,11 @@ def end_screen(score, max_combo, accuracy, counts, JUDGEMENT_COLOURS):
                 pygame.quit()
                 sys.exit()
 
-            if event.type == pygame.MOUSEBUTTONDOWN:
+            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                if restart_button.checkForInput(mouse_pos):
+                    return "restart"
                 if menu_button.checkForInput(mouse_pos):
-                    pygame.event.clear()
-                    return
+                    return "menu"
 
         pygame.display.flip()
         clock.tick(60)
@@ -187,20 +219,20 @@ def draw_health_bar(surface, x, y, width, height, current_health, max_health):
 
     pygame.draw.rect(surface, (255, 255, 255), bg_rect, width=2, border_radius=4)
 
-def game_over_screen():
+def game_over_screen(score, max_combo, accuracy, counts, JUDGEMENT_COLOURS):
     pygame.display.set_caption("Game Over")
 
     center_x = SCREEN.get_width() // 2
 
     title_text = get_font(60).render("GAME OVER", True, "#ff0000")
-    title_rect = title_text.get_rect(center=(center_x, 200))
+    title_rect = title_text.get_rect(center=(center_x, 150))
 
     sub_text = get_font(25).render("You ran out of health!", True, "#ffffff")
-    sub_rect = sub_text.get_rect(center=(center_x, 270))
+    sub_rect = sub_text.get_rect(center=(center_x, 220))
 
-    restart_button = Button(image=None, pos=(center_x, 380), text_input="RESTART", font=get_font(40), base_colour="#ffffff", hovering_colour="#00ff00")
-
-    menu_button = Button(image=None, pos=(center_x, 480), text_input="MAIN MENU", font=get_font(40), base_colour="#ffffff", hovering_colour="#00ff00")
+    stats_button   = Button(image=None, pos=(center_x, 340), text_input="VIEW STATS", font=get_font(40), base_colour="#ffffff", hovering_colour="#00fbff")
+    restart_button = Button(image=None, pos=(center_x, 440), text_input="RESTART", font=get_font(40), base_colour="#ffffff", hovering_colour="#00ff00")
+    menu_button = Button(image=None, pos=(center_x, 540), text_input="MAIN MENU", font=get_font(40), base_colour="#ffffff", hovering_colour="#00ff00")
 
     overlay = pygame.Surface(SCREEN.get_size())
     overlay.set_alpha(200)
@@ -212,6 +244,9 @@ def game_over_screen():
         SCREEN.blit(sub_text, sub_rect)
 
         mouse_pos = pygame.mouse.get_pos()
+
+        stats_button.changeColour(mouse_pos)
+        stats_button.update(SCREEN)
 
         restart_button.changeColour(mouse_pos)
         restart_button.update(SCREEN)
@@ -225,6 +260,8 @@ def game_over_screen():
                 sys.exit()
 
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                if stats_button.checkForInput(mouse_pos):
+                    return end_screen(score, max_combo, accuracy, counts, JUDGEMENT_COLOURS)
                 if restart_button.checkForInput(mouse_pos):
                     return "restart"
                 if menu_button.checkForInput(mouse_pos):
@@ -233,10 +270,6 @@ def game_over_screen():
         pygame.display.flip()
         clock.tick(60)
 
-def get_combo_multiplier(combo_before_hit):
-    if combo_before_hit <= 1:
-        return 0
-    return combo_before_hit - 1
 
 def start_game():
     global background_dim_enabled
@@ -266,15 +299,15 @@ def start_game():
         "MISS": "#ff0000"    
     }
 
-    chart_notes = list(NIGHT_OF_NIGHTS_CHART)
     active_notes = []
+    last_generated_time = 1000
+    LOOKAHEAD_WINDOW = 3000
     
     start_time = pygame.time.get_ticks()
 
     is_paused = False
     pause_time_offset = 0 
     pause_start_ticks = 0
-    level_complete_time = None
 
     resume_button = Button(image=None, pos=(720, 320), text_input="RESUME", font=get_font(40), base_colour="#ffffff", hovering_colour="#00ff00")
     restart_button = Button(image=None, pos=(720, 430), text_input="RESTART", font=get_font(45), base_colour="#ffffff", hovering_colour="#fbff00")
@@ -298,9 +331,12 @@ def start_game():
             SCREEN.blit(receptor_images[lane_idx], (x_pos, receptor_y))
 
         if current_time > 0 and not is_paused:
-            while chart_notes and chart_notes[0][0] <= current_time + 1500:
-                spawned = chart_notes.pop(0)
-                active_notes.append({"hit_time": spawned[0], "lane": spawned[1]})
+            if last_generated_time < current_time + LOOKAHEAD_WINDOW:
+                new_block, last_generated_time = generate_next_pattern(
+                    last_note_time=last_generated_time,
+                    distance_traveled=current_time
+                )
+                active_notes.extend(new_block)
 
         for note in active_notes[:]:
             time_difference = note["hit_time"] - current_time
@@ -309,7 +345,7 @@ def start_game():
             if -80 <= note_y <= 850:
                 SCREEN.blit(note_images[note["lane"]], (lane_x_positions[note["lane"]], note_y))
 
-            if not is_paused and time_difference < -133:
+            if not is_paused and time_difference < -170:
                 health = max(0.0, health - HEALTH_LOSS_MISS)
                 counts["MISS"] += 1
                 total_notes_played += 1
@@ -366,7 +402,7 @@ def start_game():
         pygame.draw.rect(SCREEN, (255, 255, 255), (bar_x, bar_y, bar_width, bar_height), width=2, border_radius=4)
 
         if health <= 0:
-            action = game_over_screen()
+            action = game_over_screen(score, max_combo, accuracy, counts, JUDGEMENT_COLOURS)
             if action == "restart":
                 pygame.event.clear()
                 start_game()
@@ -437,31 +473,33 @@ def start_game():
                     elif event.key == pygame.K_l: pressed_lane = 3
 
                     if pressed_lane is not None:
+                        note_hit = False
+
                         for note in active_notes:
                             if note["lane"] == pressed_lane:
                                 diff = abs(note["hit_time"] - current_time)
 
-                                if diff <= 16:
+                                if diff <= 30:
                                     counts["MAX"] += 1
                                     base_score = 320
                                     rating = "MAX!"
                                     health = min(MAX_HEALTH, health + HEALTH_GAIN_MAX)
-                                elif diff <= 46:
+                                elif diff <= 70:
                                     counts["300"] += 1
                                     base_score = 300
                                     rating = "300"
                                     health = min(MAX_HEALTH, health + HEALTH_GAIN_HIT)
-                                elif diff <= 79:
+                                elif diff <= 110:
                                     counts["200"] += 1
                                     base_score = 200
                                     rating = "200"
                                     health = min(MAX_HEALTH, health + HEALTH_GAIN_HIT)
-                                elif diff <= 109:
+                                elif diff <= 140:
                                     counts["100"] += 1
                                     base_score = 100
                                     rating = "100"
                                     health = min(MAX_HEALTH, health + HEALTH_GAIN_HIT)
-                                elif diff <= 133:
+                                elif diff <= 170:
                                     counts["50"] += 1
                                     base_score = 50
                                     rating = "50"
@@ -469,8 +507,8 @@ def start_game():
                                 else:
                                     continue
 
+                                note_hit = True
                                 current_multiplier = 1.0 if combo <= 1 else 1.0 + (combo - 1) * 0.1
-
                                 score += int(base_score * current_multiplier)
 
                                 indicator_x = lane_x_positions[pressed_lane] + 40
@@ -483,13 +521,10 @@ def start_game():
                                 total_notes_played += 1
                                 active_notes.remove(note)
                                 break
-
-        if total_notes_played > 0 and len(chart_notes) == 0 and len(active_notes) == 0:
-            if level_complete_time is None:
-                level_complete_time = current_ticks
-            elif current_ticks - level_complete_time >= 2000:
-                end_screen(score, max_combo, accuracy, counts, JUDGEMENT_COLOURS)
-                return
+                        
+                        if not note_hit:
+                            combo = 0
+                            health = max(0.0, health - 3)
 
         pygame.display.flip()
         clock.tick(60)
@@ -513,11 +548,12 @@ def instructions_page():
         "• 200: 200 Points   • 100: 100 Points",
         "• 50:  50 Points    • MISS: 0 Points",
         "",
-        "PAUSE/EXIT GAME: Press 'ESC' mid-level",
-        "",
+        "PAUSE/EXIT GAME: Press 'ESC' mid-level.",
         "AIM:",
-        "Hit the notes and build up your combo.",
-        "Aim for high accuracy and get the best possible score!"
+        "Hit the notes and build up your combo by not missing.",
+        "Aim for high accuracy and get the best possible score!",
+        "Don't hit when there aren't any notes!"
+
     ]
 
     back_button = Button(image=None, pos=(180, 65), text_input="BACK", font=get_font(40), base_colour="#ffffff", hovering_colour="#00ff00")
