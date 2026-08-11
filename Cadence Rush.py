@@ -157,7 +157,7 @@ def end_screen(score, max_combo, accuracy, counts, JUDGEMENT_COLOURS):
         SCREEN.blit(combo_surface, (160, 290))
         SCREEN.blit(acc_surface,   (160, 360))
 
-        breakdown_title = get_font(30).render("JUDGEMENTS", True, "#aaaaaa")
+        breakdown_title = get_font(30).render("JUDGEMENTS", True, "#ffffff")
         SCREEN.blit(breakdown_title, (850, 200))
 
         y_offset = 260
@@ -219,7 +219,7 @@ def draw_health_bar(surface, x, y, width, height, current_health, max_health):
 
     pygame.draw.rect(surface, (255, 255, 255), bg_rect, width=2, border_radius=4)
 
-def game_over_screen(score, max_combo, accuracy, counts, JUDGEMENT_COLOURS):
+def game_over_screen(score, final_time_str, max_combo, accuracy, counts, JUDGEMENT_COLOURS):
     pygame.display.set_caption("Game Over")
 
     center_x = SCREEN.get_width() // 2
@@ -229,6 +229,9 @@ def game_over_screen(score, max_combo, accuracy, counts, JUDGEMENT_COLOURS):
 
     sub_text = get_font(25).render("You ran out of health!", True, "#ffffff")
     sub_rect = sub_text.get_rect(center=(center_x, 220))
+
+    time_text = get_font(25).render(f"Survived: {final_time_str}", True, "#ffff00")
+    time_rect = time_text.get_rect(center=(center_x, 70))
 
     stats_button   = Button(image=None, pos=(center_x, 340), text_input="VIEW STATS", font=get_font(40), base_colour="#ffffff", hovering_colour="#00fbff")
     restart_button = Button(image=None, pos=(center_x, 440), text_input="RESTART", font=get_font(40), base_colour="#ffffff", hovering_colour="#00ff00")
@@ -242,6 +245,7 @@ def game_over_screen(score, max_combo, accuracy, counts, JUDGEMENT_COLOURS):
         SCREEN.blit(overlay, (0, 0))
         SCREEN.blit(title_text, title_rect)
         SCREEN.blit(sub_text, sub_rect)
+        SCREEN.blit(time_text, time_rect)
 
         mouse_pos = pygame.mouse.get_pos()
 
@@ -304,6 +308,8 @@ def start_game():
     LOOKAHEAD_WINDOW = 3000
     
     start_time = pygame.time.get_ticks()
+    elapsed_play_time = 0  
+    last_frame_ticks = pygame.time.get_ticks()
 
     is_paused = False
     pause_time_offset = 0 
@@ -313,7 +319,19 @@ def start_game():
     restart_button = Button(image=None, pos=(720, 430), text_input="RESTART", font=get_font(45), base_colour="#ffffff", hovering_colour="#fbff00")
     menu_button = Button(image=None, pos=(720, 540), text_input="MAIN MENU", font=get_font(40), base_colour="#ffffff", hovering_colour="#ff0000")
 
+    current_time = -3000    
+
     while True:
+        current_ticks = pygame.time.get_ticks()
+        dt = current_ticks - last_frame_ticks
+        last_frame_ticks = current_ticks
+
+        if not is_paused:
+            current_time = current_ticks - start_time - 3000 - pause_time_offset
+
+        if current_time >= 0 and not is_paused:
+            elapsed_play_time += dt
+
         if background_dim_enabled:
             SCREEN.fill("black")
         else:
@@ -322,8 +340,18 @@ def start_game():
         
         current_ticks = pygame.time.get_ticks()
 
-        if not is_paused:
-            current_time = current_ticks - start_time - 3000 - pause_time_offset
+        if current_time >= 200000:   
+            scroll_speed = 0.90
+        elif current_time >= 150000:  
+            scroll_speed = 0.80
+        elif current_time >= 125000:     
+            scroll_speed = 0.72
+        elif current_time >= 105000:     
+            scroll_speed = 0.65
+        elif current_time >= 85000:     
+            scroll_speed = 0.58
+        else:
+            scroll_speed = 0.50
 
         pygame.draw.rect(SCREEN, (0, 0, 0), (490, 0, 440, 850))
 
@@ -402,7 +430,10 @@ def start_game():
         pygame.draw.rect(SCREEN, (255, 255, 255), (bar_x, bar_y, bar_width, bar_height), width=2, border_radius=4)
 
         if health <= 0:
-            action = game_over_screen(score, max_combo, accuracy, counts, JUDGEMENT_COLOURS)
+            final_seconds = elapsed_play_time // 1000
+            final_time_str = f"{final_seconds // 60:02d}:{final_seconds % 60:02d}"
+                
+            action = game_over_screen(score, final_time_str, max_combo, accuracy, counts, JUDGEMENT_COLOURS)
             if action == "restart":
                 pygame.event.clear()
                 start_game()
@@ -414,6 +445,33 @@ def start_game():
         SCREEN.blit(get_font(25).render(acc_str, True, "#ffffff"), (1100, 40))
         SCREEN.blit(get_font(30).render(score_str, True, "#ffffff"), (1000, 780))
         SCREEN.blit(get_font(30).render(combo_str, True, "#ffffff"), (50, 780))
+
+        total_seconds = elapsed_play_time // 1000
+        minutes = total_seconds // 60
+        seconds = total_seconds % 60
+        timer_str = f"TIME: {minutes:02d}:{seconds:02d}"
+
+        timer_text = get_font(20).render(timer_str, True, "#ffffff")
+        SCREEN.blit(timer_text, (40, 70))
+
+        if current_time >= 85000:
+            if current_time >= 200000:
+                speed_str, color = "SPEED: 1.8x (MAX)", "#ff0000"
+            elif current_time >= 150000:
+                speed_str, color = "SPEED: 1.6x", "#ff3300"
+            elif current_time >= 125000:
+                speed_str, color = "SPEED: 1.44x", "#ffaa00"
+            elif current_time >= 105000:
+                speed_str, color = "SPEED: 1.3x", "#ffff00"
+            else:
+                speed_str, color = "SPEED: 1.16x", "#00ff00"
+
+            speed_text = get_font(20).render(speed_str, True, color)
+            
+            center_x = SCREEN.get_width() // 2
+            speed_rect = speed_text.get_rect(center=(center_x, 30))
+            
+            SCREEN.blit(speed_text, speed_rect)
 
         if -3000 <= current_time <= 500 and not is_paused:
             if current_time < 0:
