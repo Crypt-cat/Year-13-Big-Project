@@ -4,6 +4,9 @@ import random
 
 pygame.init()
 
+pygame.mixer.music.load("Year-13-Big-project/assets/cyber_grind.mp3")
+pygame.mixer.music.set_volume(0.2)
+
 SCREEN = pygame.display.set_mode((1440, 850))
 clock = pygame.time.Clock()
 
@@ -149,7 +152,7 @@ def end_screen(score, max_combo, accuracy, counts, JUDGEMENT_COLOURS):
         title_rect = title_text.get_rect(center=(720, 100))
         SCREEN.blit(title_text, title_rect)
 
-        score_surface = get_font(32).render(f"FINAL SCORE: {score:07d}", True, "#ffffff")
+        score_surface = get_font(32).render(f"FINAL SCORE: {score:08d}", True, "#ffffff")
         combo_surface = get_font(32).render(f"MAX COMBO:   {max_combo}x", True, "#ffffff")
         acc_surface   = get_font(32).render(f"ACCURACY:    {accuracy:.2f}%", True, "#ffffff")
 
@@ -319,7 +322,9 @@ def start_game():
     restart_button = Button(image=None, pos=(720, 430), text_input="RESTART", font=get_font(45), base_colour="#ffffff", hovering_colour="#fbff00")
     menu_button = Button(image=None, pos=(720, 540), text_input="MAIN MENU", font=get_font(40), base_colour="#ffffff", hovering_colour="#ff0000")
 
-    current_time = -3000    
+    current_time = -3000
+    pygame.mixer.music.stop()
+    music_started = False  
 
     while True:
         current_ticks = pygame.time.get_ticks()
@@ -331,6 +336,9 @@ def start_game():
 
         if current_time >= 0 and not is_paused:
             elapsed_play_time += dt
+            if not music_started:
+                pygame.mixer.music.play(loops=-1)
+                music_started = True
 
         if background_dim_enabled:
             SCREEN.fill("black")
@@ -409,7 +417,7 @@ def start_game():
             accuracy = (numerator / denominator) * 100
 
         acc_str = f"ACC: {accuracy:.2f}%"
-        score_str = f"SCORE: {score:07d}"
+        score_str = f"SCORE: {score:08d}"
         combo_str = f"{combo}x COMBO"
 
         health_ratio = health / MAX_HEALTH
@@ -430,6 +438,8 @@ def start_game():
         pygame.draw.rect(SCREEN, (255, 255, 255), (bar_x, bar_y, bar_width, bar_height), width=2, border_radius=4)
 
         if health <= 0:
+            pygame.mixer.music.stop()
+
             final_seconds = elapsed_play_time // 1000
             final_time_str = f"{final_seconds // 60:02d}:{final_seconds % 60:02d}"
                 
@@ -443,7 +453,7 @@ def start_game():
                 return
 
         SCREEN.blit(get_font(25).render(acc_str, True, "#ffffff"), (1100, 40))
-        SCREEN.blit(get_font(30).render(score_str, True, "#ffffff"), (1000, 780))
+        SCREEN.blit(get_font(30).render(score_str, True, "#ffffff"), (960, 780))
         SCREEN.blit(get_font(30).render(combo_str, True, "#ffffff"), (50, 780))
 
         total_seconds = elapsed_play_time // 1000
@@ -505,6 +515,8 @@ def start_game():
                 if resume_button.checkForInput(mouse_pos):
                     is_paused = False
                     pause_time_offset += (current_ticks - pause_start_ticks)
+                    if music_started:
+                        pygame.mixer.music.unpause()
 
                 if restart_button.checkForInput(mouse_pos):
                     pygame.event.clear()
@@ -520,9 +532,13 @@ def start_game():
                     if not is_paused:
                         is_paused = True
                         pause_start_ticks = current_ticks
+                        if music_started:
+                            pygame.mixer.music.pause()
                     else:
                         is_paused = False
                         pause_time_offset += (current_ticks - pause_start_ticks)
+                        if music_started:
+                            pygame.mixer.music.unpause()
 
                 if not is_paused:
                     if event.key == pygame.K_a: pressed_lane = 0
