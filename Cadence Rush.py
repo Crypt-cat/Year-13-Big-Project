@@ -7,6 +7,9 @@ pygame.init()
 pygame.mixer.music.load("Year-13-Big-project/assets/cyber_grind.mp3")
 pygame.mixer.music.set_volume(0.2)
 
+hitsound = pygame.mixer.Sound("Year-13-Big-project/assets/hitsound.mp3")
+hitsound.set_volume(0.3)
+
 SCREEN = pygame.display.set_mode((1440, 850))
 clock = pygame.time.Clock()
 
@@ -580,6 +583,8 @@ def start_game():
                                     health = min(MAX_HEALTH, health + HEALTH_GAIN_HIT)
                                 else:
                                     continue
+
+                                hitsound.play()
 
                                 note_hit = True
                                 current_multiplier = 1.0 if combo <= 1 else 1.0 + (combo - 1) * 0.1
