@@ -8,13 +8,15 @@ pygame.mixer.music.load("Year-13-Big-project/assets/cyber_grind.mp3")
 pygame.mixer.music.set_volume(0.2)
 
 hitsound = pygame.mixer.Sound("Year-13-Big-project/assets/hitsound.mp3")
-hitsound.set_volume(0.3)
+hitsound.set_volume(0.2)
 
 SCREEN = pygame.display.set_mode((1440, 850))
 clock = pygame.time.Clock()
 
 default_background = pygame.image.load("Year-13-Big-project/assets/CadenceRushBackground.png").convert()
+
 background_dim_enabled = False
+keybind_mode_wasd = False
 
 MAX_HEALTH = 100
 HEALTH_GAIN_MAX = 2
@@ -282,7 +284,7 @@ def game_over_screen(score, final_time_str, max_combo, accuracy, counts, JUDGEME
 
 
 def start_game():
-    global background_dim_enabled
+    global background_dim_enabled, keybind_mode_wasd
     health = MAX_HEALTH
 
     pygame.display.set_caption("Cadence Rush")
@@ -544,10 +546,16 @@ def start_game():
                             pygame.mixer.music.unpause()
 
                 if not is_paused:
-                    if event.key == pygame.K_a: pressed_lane = 0
-                    elif event.key == pygame.K_s: pressed_lane = 1
-                    elif event.key == pygame.K_k: pressed_lane = 2
-                    elif event.key == pygame.K_l: pressed_lane = 3
+                    if keybind_mode_wasd:
+                        if event.key == pygame.K_a: pressed_lane = 0
+                        elif event.key == pygame.K_s: pressed_lane = 1
+                        elif event.key == pygame.K_w: pressed_lane = 2
+                        elif event.key == pygame.K_d: pressed_lane = 3
+                    else:
+                        if event.key == pygame.K_a: pressed_lane = 0
+                        elif event.key == pygame.K_s: pressed_lane = 1
+                        elif event.key == pygame.K_k: pressed_lane = 2
+                        elif event.key == pygame.K_l: pressed_lane = 3
 
                     if pressed_lane is not None:
                         note_hit = False
@@ -614,13 +622,28 @@ def instructions_page():
 
     title_text = get_font(60).render("HOW TO PLAY", True, "#00ff00")
     title_rect = title_text.get_rect(center=(720, 80))
+    if keybind_mode_wasd:
+        controls_text = [
+            "• Lane 1 (Left):   Key 'A'",
+            "• Lane 2 (Down):   Key 'S'",
+            "• Lane 3 (Up):     Key 'W'",
+            "• Lane 4 (Right):  Key 'D'",
+        ]
+    else:
+        controls_text = [
+            "• Lane 1 (Left):   Key 'A'",
+            "• Lane 2 (Down):   Key 'S'",
+            "• Lane 3 (Up):     Key 'K'",
+            "• Lane 4 (Right):  Key 'L'",
+        ]
 
     lines = [
+        "Hit the notes and build up your combo by not missing.",
+        "Aim for high accuracy and get the best possible score!",
+        "Missing/Ghost-tapping will result in health loss.",
+        "",
         "CONTROLS:",
-        "• Lane 1 (Left):   Key 'A'",
-        "• Lane 2 (Down):   Key 'S'",
-        "• Lane 3 (Up):     Key 'K'",
-        "• Lane 4 (Right):  Key 'L'",
+        *controls_text,
         "",
         "SCORING:",
         "• MAX: 320 Points   • 300: 300 Points",
@@ -628,11 +651,6 @@ def instructions_page():
         "• 50:  50 Points    • MISS: 0 Points",
         "",
         "PAUSE/EXIT GAME: Press 'ESC' mid-level.",
-        "AIM:",
-        "Hit the notes and build up your combo by not missing.",
-        "Aim for high accuracy and get the best possible score!",
-        "Don't hit when there aren't any notes!"
-
     ]
 
     back_button = Button(image=None, pos=(180, 65), text_input="BACK", font=get_font(40), base_colour="#ffffff", hovering_colour="#00ff00")
@@ -666,7 +684,7 @@ def instructions_page():
         clock.tick(60)
 
 def options():
-    global background_dim_enabled
+    global background_dim_enabled, keybind_mode_wasd
     pygame.display.set_caption("Options")
 
     back_button = Button(image=None, pos=(720, 600), text_input="BACK", font=get_font(40), base_colour="#ffffff", hovering_colour="#00ff00")
@@ -674,30 +692,41 @@ def options():
     options_text = get_font(60).render("Options", True, "#ffffff")
     options_rect = options_text.get_rect(center=(720, 150))
     
-    label_text = get_font(30).render("BLACK BACKGROUND:", True, "#ffffff")
-    label_rect = label_text.get_rect(center=(600, 350))
+    bg_label = get_font(30).render("BLACK BACKGROUND:", True, "#ffffff")
+    bg_rect = bg_label.get_rect(center=(600, 290))
+
+    key_label = get_font(30).render("WASD KEYBINDS:", True, "#ffffff")
+    key_rect = key_label.get_rect(center=(550, 400))
     
     while True:
         SCREEN.fill("black")
         SCREEN.blit(options_text, options_rect)
-        SCREEN.blit(label_text, label_rect)
+        SCREEN.blit(bg_label, bg_rect)
+        SCREEN.blit(key_label, key_rect)
         
         mouse_pos = pygame.mouse.get_pos()
-
-        toggle_text = "ON" if background_dim_enabled else "OFF"
-        toggle_colour = "#00ff00" if background_dim_enabled else "#ff0000"
         
-        toggle_button = Button(
-            image=None, 
-            pos=(900, 350), 
-            text_input=toggle_text, 
-            font=get_font(35), 
-            base_colour=toggle_colour, 
-            hovering_colour="#ffffff"
+        bg_toggle_text = "ON" if background_dim_enabled else "OFF"
+        bg_toggle_colour = "#00ff00" if background_dim_enabled else "#ff0000"
+        
+        bg_toggle_button = Button(
+            image=None, pos=(920, 290), text_input=bg_toggle_text, 
+            font=get_font(35), base_colour=bg_toggle_colour, hovering_colour="#ffffff"
+        )
+
+        key_toggle_text = "WASD" if keybind_mode_wasd else "ASKL"
+        key_toggle_colour = "#00fbff" if keybind_mode_wasd else "#ffffff"
+
+        key_toggle_button = Button(
+            image=None, pos=(850, 400), text_input=key_toggle_text, 
+            font=get_font(35), base_colour=key_toggle_colour, hovering_colour="#00ff00"
         )
         
-        toggle_button.changeColour(mouse_pos)
-        toggle_button.update(SCREEN)
+        bg_toggle_button.changeColour(mouse_pos)
+        bg_toggle_button.update(SCREEN)
+
+        key_toggle_button.changeColour(mouse_pos)
+        key_toggle_button.update(SCREEN)
         
         back_button.changeColour(mouse_pos)
         back_button.update(SCREEN)
@@ -707,7 +736,24 @@ def options():
                 pygame.quit()
                 sys.exit()
             if event.type == pygame.MOUSEBUTTONDOWN:
-                if toggle_button.checkForInput(mouse_pos):
+                if bg_toggle_button.checkForInput(mouse_pos):
+                    background_dim_enabled = not background_dim_enabled
+                if key_toggle_button.checkForInput(mouse_pos):
+                    keybind_mode_wasd = not keybind_mode_wasd
+                if back_button.checkForInput(mouse_pos):
+                    return
+                    
+        pygame.display.flip()
+        
+        back_button.changeColour(mouse_pos)
+        back_button.update(SCREEN)
+        
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                if bg_toggle_button.checkForInput(mouse_pos):
                     background_dim_enabled = not background_dim_enabled
                 if back_button.checkForInput(mouse_pos):
                     return
