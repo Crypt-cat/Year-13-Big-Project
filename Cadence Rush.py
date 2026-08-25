@@ -18,6 +18,15 @@ default_background = pygame.image.load("Year-13-Big-project/assets/CadenceRushBa
 background_dim_enabled = False
 keybind_mode_wasd = False
 
+THEMES = {
+    "DEFAULT": ["Arrow_Colour_1.png", "Arrow_Colour_2.png", "Arrow_Colour_3.png", "Arrow_Colour_4.png"],
+    "MIXED":    ["Arrow_Mixed_1.png",   "Arrow_Mixed_2.png",   "Arrow_Mixed_3.png",   "Arrow_Mixed_4.png"],
+    "WHITE":  ["Arrow_White_1.png", "Arrow_White_2.png", "Arrow_White_3.png", "Arrow_White_4.png"]
+}
+
+theme_names = ["DEFAULT", "MIXED", "WHITE"]
+current_theme_index = 0
+
 MAX_HEALTH = 100
 HEALTH_GAIN_MAX = 2
 HEALTH_GAIN_HIT = 1
@@ -63,37 +72,6 @@ PATTERN_EXPERT = [
     [(0, 0), (1, 90), (0, 180), (2, 270), (3, 360), (2, 450)],           
 ]
 
-def generate_next_pattern(last_note_time, distance_traveled):
-    if distance_traveled < 15000:       
-        pool = PATTERN_EASY
-        gap_between_patterns = 400
-    elif distance_traveled < 35000:    
-        pool = PATTERN_EASY + PATTERN_MEDIUM
-        gap_between_patterns = 250
-    elif distance_traveled < 65000:    
-        pool = PATTERN_MEDIUM + PATTERN_HARD
-        gap_between_patterns = 180
-    else:                              
-        pool = PATTERN_HARD + PATTERN_EXPERT
-        gap_between_patterns = 120
-
-    chosen_pattern = random.choice(pool)
-    
-    should_mirror = random.choice([True, False])
-    lane_shift = random.randint(0, 3)
-
-    new_notes = []
-    base_time = last_note_time + gap_between_patterns
-
-    for lane, rel_time in chosen_pattern:
-        final_lane = (3 - lane) if should_mirror else lane
-        final_lane = (final_lane + lane_shift) % 4
-
-        spawn_time = base_time + rel_time
-        new_notes.append({"lane": final_lane, "hit_time": spawn_time})
-
-    max_block_time = max(rel_time for _, rel_time in chosen_pattern)
-    return new_notes, base_time + max_block_time
 
 class Button():
     """Button class to easily create buttons for my program and automatically."""
@@ -133,9 +111,57 @@ class Button():
             self.text = self.font.render(self.text_input, True, self.base_colour)
 
 
+def generate_next_pattern(last_note_time, distance_traveled):
+    """Calculates timing and placement to generate the next note pattern."""
+    if distance_traveled < 15000:       
+        pool = PATTERN_EASY
+        gap_between_patterns = 400
+    elif distance_traveled < 35000:    
+        pool = PATTERN_EASY + PATTERN_MEDIUM
+        gap_between_patterns = 250
+    elif distance_traveled < 65000:    
+        pool = PATTERN_MEDIUM + PATTERN_HARD
+        gap_between_patterns = 180
+    else:                              
+        pool = PATTERN_HARD + PATTERN_EXPERT
+        gap_between_patterns = 120
+
+    chosen_pattern = random.choice(pool)
+    
+    should_mirror = random.choice([True, False])
+    lane_shift = random.randint(0, 3)
+
+    new_notes = []
+    base_time = last_note_time + gap_between_patterns
+
+    for lane, rel_time in chosen_pattern:
+        final_lane = (3 - lane) if should_mirror else lane
+        final_lane = (final_lane + lane_shift) % 4
+
+        spawn_time = base_time + rel_time
+        new_notes.append({"lane": final_lane, "hit_time": spawn_time})
+
+    max_block_time = max(rel_time for _, rel_time in chosen_pattern)
+    return new_notes, base_time + max_block_time
+
+
 def get_font(size):
     """Returns the custom font along with the size that was inputted."""
     return pygame.font.Font("Year-13-Big-project/assets/font.ttf", size)
+
+
+def update_note_theme():
+    """Updates note images to match the selected theme"""
+    global note_images, current_theme_index
+    theme_key = theme_names[current_theme_index]
+    files = THEMES[theme_key]
+
+    img_up    = pygame.transform.scale(pygame.image.load(f"Year-13-Big-project/assets/{files[0]}").convert_alpha(), (80, 80))
+    img_left  = pygame.transform.scale(pygame.image.load(f"Year-13-Big-project/assets/{files[1]}").convert_alpha(), (80, 80))
+    img_down  = pygame.transform.scale(pygame.image.load(f"Year-13-Big-project/assets/{files[2]}").convert_alpha(), (80, 80))
+    img_right = pygame.transform.scale(pygame.image.load(f"Year-13-Big-project/assets/{files[3]}").convert_alpha(), (80, 80))
+
+    note_images = {0: img_left, 1: img_down, 2: img_up, 3: img_right}
 
 
 def end_screen(score, max_combo, accuracy, counts, JUDGEMENT_COLOURS):
@@ -206,6 +232,7 @@ def end_screen(score, max_combo, accuracy, counts, JUDGEMENT_COLOURS):
         clock.tick(60)
 
 def draw_health_bar(surface, x, y, width, height, current_health, max_health):
+    """Renders the player's health bar UI on screen."""
     current_health = max(0, min(current_health, max_health))
 
     bg_rect = pygame.Rect(x, y, width, height)
@@ -216,18 +243,19 @@ def draw_health_bar(surface, x, y, width, height, current_health, max_health):
     fill_rect = pygame.Rect(x, y, fill_width, height)
 
     if health_ratio > 0.5:
-        bar_color = (0, 255, 100)
+        bar_colour = (0, 255, 100)
     elif health_ratio > 0.25:
-        bar_color = (255, 200, 0)
+        bar_colour = (255, 200, 0)
     else:
-        bar_color = (255, 50, 50)
+        bar_colour = (255, 50, 50)
         
     if fill_width > 0:
-        pygame.draw.rect(surface, bar_color, fill_rect, border_radius=4)
+        pygame.draw.rect(surface, bar_colour, fill_rect, border_radius=4)
 
     pygame.draw.rect(surface, (255, 255, 255), bg_rect, width=2, border_radius=4)
 
 def game_over_screen(score, final_time_str, max_combo, accuracy, counts, JUDGEMENT_COLOURS):
+    """Displays a summary screen with final stats and performance info."""
     pygame.display.set_caption("Game Over")
 
     center_x = SCREEN.get_width() // 2
@@ -284,6 +312,7 @@ def game_over_screen(score, final_time_str, max_combo, accuracy, counts, JUDGEME
 
 
 def start_game():
+    """Runs the main gameplay loop, handling input, note rendering, audio, hit detection, and more."""
     global background_dim_enabled, keybind_mode_wasd
     health = MAX_HEALTH
 
@@ -431,15 +460,15 @@ def start_game():
         pygame.draw.rect(SCREEN, (50, 0, 0), (bar_x, bar_y, bar_width, bar_height), border_radius=4)
         
         if health_ratio > 0.5:
-            bar_color = (0, 255, 100)
+            bar_colour = (0, 255, 100)
         elif health_ratio > 0.25:
-            bar_color = (255, 200, 0)
+            bar_colour = (255, 200, 0)
         else:
-            bar_color = (255, 50, 50)
+            bar_colour = (255, 50, 50)
             
         fill_w = int(bar_width * health_ratio)
         if fill_w > 0:
-            pygame.draw.rect(SCREEN, bar_color, (bar_x, bar_y, fill_w, bar_height), border_radius=4)
+            pygame.draw.rect(SCREEN, bar_colour, (bar_x, bar_y, fill_w, bar_height), border_radius=4)
         pygame.draw.rect(SCREEN, (255, 255, 255), (bar_x, bar_y, bar_width, bar_height), width=2, border_radius=4)
 
         if health <= 0:
@@ -471,17 +500,17 @@ def start_game():
 
         if current_time >= 85000:
             if current_time >= 200000:
-                speed_str, color = "SPEED: 1.8x (MAX)", "#ff0000"
+                speed_str, colour = "SPEED: 1.8x (MAX)", "#ff0000"
             elif current_time >= 150000:
-                speed_str, color = "SPEED: 1.6x", "#ff3300"
+                speed_str, colour = "SPEED: 1.6x", "#ff3300"
             elif current_time >= 125000:
-                speed_str, color = "SPEED: 1.44x", "#ffaa00"
+                speed_str, colour = "SPEED: 1.44x", "#ffaa00"
             elif current_time >= 105000:
-                speed_str, color = "SPEED: 1.3x", "#ffff00"
+                speed_str, colour = "SPEED: 1.3x", "#ffff00"
             else:
-                speed_str, color = "SPEED: 1.16x", "#00ff00"
+                speed_str, colour = "SPEED: 1.16x", "#00ff00"
 
-            speed_text = get_font(20).render(speed_str, True, color)
+            speed_text = get_font(20).render(speed_str, True, colour)
             
             center_x = SCREEN.get_width() // 2
             speed_rect = speed_text.get_rect(center=(center_x, 30))
@@ -684,12 +713,13 @@ def instructions_page():
         clock.tick(60)
 
 def options():
-    global background_dim_enabled, keybind_mode_wasd
+    """Displays the settings menu to adjust keybinds, background dim, and note themes."""
+    global background_dim_enabled, keybind_mode_wasd, current_theme_index
     pygame.display.set_caption("Options")
 
-    back_button = Button(image=None, pos=(720, 600), text_input="BACK", font=get_font(40), base_colour="#ffffff", hovering_colour="#00ff00")
+    back_button = Button(image=None, pos=(720, 660), text_input="BACK", font=get_font(40), base_colour="#ffffff", hovering_colour="#00ff00")
     
-    options_text = get_font(60).render("Options", True, "#ffffff")
+    options_text = get_font(60).render("Options", True, "#00fffb")
     options_rect = options_text.get_rect(center=(720, 150))
     
     bg_label = get_font(30).render("BLACK BACKGROUND:", True, "#ffffff")
@@ -697,36 +727,41 @@ def options():
 
     key_label = get_font(30).render("WASD KEYBINDS:", True, "#ffffff")
     key_rect = key_label.get_rect(center=(550, 400))
+
+    theme_label = get_font(30).render("NOTE THEME:", True, "#ffffff")
+    theme_rect = theme_label.get_rect(center=(500, 510))
     
     while True:
         SCREEN.fill("black")
         SCREEN.blit(options_text, options_rect)
         SCREEN.blit(bg_label, bg_rect)
         SCREEN.blit(key_label, key_rect)
+        SCREEN.blit(theme_label, theme_rect)
         
         mouse_pos = pygame.mouse.get_pos()
         
         bg_toggle_text = "ON" if background_dim_enabled else "OFF"
         bg_toggle_colour = "#00ff00" if background_dim_enabled else "#ff0000"
         
-        bg_toggle_button = Button(
-            image=None, pos=(920, 290), text_input=bg_toggle_text, 
-            font=get_font(35), base_colour=bg_toggle_colour, hovering_colour="#ffffff"
-        )
+        bg_toggle_button = Button(image=None, pos=(920, 290), text_input=bg_toggle_text, font=get_font(35), base_colour=bg_toggle_colour, hovering_colour="#ffffff")
 
         key_toggle_text = "WASD" if keybind_mode_wasd else "ASKL"
-        key_toggle_colour = "#00fbff" if keybind_mode_wasd else "#ffffff"
+        key_toggle_colour = "#ffffff" if keybind_mode_wasd else "#ffffff"
 
-        key_toggle_button = Button(
-            image=None, pos=(850, 400), text_input=key_toggle_text, 
-            font=get_font(35), base_colour=key_toggle_colour, hovering_colour="#00ff00"
-        )
+        key_toggle_button = Button(image=None, pos=(850, 400), text_input=key_toggle_text, font=get_font(35), base_colour=key_toggle_colour, hovering_colour="#00ff00")
+
+        theme_toggle_text = theme_names[current_theme_index]
+
+        theme_toggle_button = Button(image=None, pos=(820, 510), text_input=theme_toggle_text, font=get_font(35), base_colour="#ffffff", hovering_colour="#00ff00")
         
         bg_toggle_button.changeColour(mouse_pos)
         bg_toggle_button.update(SCREEN)
 
         key_toggle_button.changeColour(mouse_pos)
         key_toggle_button.update(SCREEN)
+
+        theme_toggle_button.changeColour(mouse_pos)
+        theme_toggle_button.update(SCREEN)
         
         back_button.changeColour(mouse_pos)
         back_button.update(SCREEN)
@@ -740,6 +775,9 @@ def options():
                     background_dim_enabled = not background_dim_enabled
                 if key_toggle_button.checkForInput(mouse_pos):
                     keybind_mode_wasd = not keybind_mode_wasd
+                if theme_toggle_button.checkForInput(mouse_pos):
+                    current_theme_index = (current_theme_index + 1) % len(theme_names)
+                    update_note_theme()
                 if back_button.checkForInput(mouse_pos):
                     return
                     
@@ -764,8 +802,16 @@ def main_menu():
     """Handles the main menu screen."""
     pygame.display.set_caption("Menu")
 
-    menu_text = get_font(100).render("Cadence Rush", True, "#00fbff")
-    menu_rect = menu_text.get_rect(center=(720, 110))
+    cadence_text = get_font(100).render("Cadence ", True, "#00fbff")
+    rush_text = get_font(100).render("Rush", True, "#ff00fb")
+
+    total_width = cadence_text.get_width() + rush_text.get_width()
+
+    start_x = 720 - (total_width // 2)
+    y_pos = 70
+
+    cadence_rect = cadence_text.get_rect(topleft=(start_x, y_pos))
+    rush_rect = rush_text.get_rect(topleft=(cadence_rect.right, y_pos))
 
     play_button = Button(image=None, pos=(720, 320), text_input="PLAY", font=get_font(50), base_colour="#ffffff", hovering_colour="#00ff00")
     options_button = Button(image=None, pos=(720, 430), text_input="OPTIONS", font=get_font(50), base_colour="#ffffff", hovering_colour="#00ff00")
@@ -774,7 +820,8 @@ def main_menu():
 
     while True:
         SCREEN.blit(default_background, (-50, 0))
-        SCREEN.blit(menu_text, menu_rect)
+        SCREEN.blit(cadence_text, cadence_rect)
+        SCREEN.blit(rush_text, rush_rect)
         menu_mouse_pos = pygame.mouse.get_pos()
 
         for button in [play_button, options_button, instructions_button, quit_button]:
